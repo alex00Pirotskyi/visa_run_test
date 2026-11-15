@@ -160,6 +160,7 @@ class ArchitecturalLightPainter extends CustomPainter {
             Color(0xff9a9d9f),
             Color(0xff777a7c),
           ],
+          const [0, .5, 1],
         ),
     );
 

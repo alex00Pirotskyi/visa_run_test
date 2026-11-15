@@ -230,12 +230,14 @@ class _VisaLandingState extends State<VisaLanding> {
               letterSpacing: -1.4,
             ),
           ),
-          const SizedBox(width: 6),
-          const SizedBox(
-            width: 44,
-            height: 26,
-            child: CustomPaint(painter: GraffitiPlaneMarkPainter()),
-          ),
+          if (!mobile) ...[
+            const SizedBox(width: 6),
+            const SizedBox(
+              width: 44,
+              height: 26,
+              child: CustomPaint(painter: GraffitiPlaneMarkPainter()),
+            ),
+          ],
           const Spacer(),
           if (!mobile) ...[
             _nav(t('runs')),
