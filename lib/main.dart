@@ -288,8 +288,9 @@ class _VisaLandingState extends State<VisaLanding> {
   Widget _desktopLayout(double width, double height) {
     final margin = math.max(46.0, width * .055);
     final calendarWidth = (width * .27).clamp(340.0, 410.0);
-    final artWidth = math.min(1045.0,
-        width - calendarWidth - margin * 2.15);
+    // The bus now spans the calendar's footprint instead of stopping at
+    // the right-hand column. Paint it BEFORE the glass so it shows through.
+    final muralWidth = math.min(width - margin * 1.6, width * .93);
     final titleSize = (width * .093).clamp(82.0, 148.0);
     return Stack(children: [
       Positioned(
@@ -302,21 +303,19 @@ class _VisaLandingState extends State<VisaLanding> {
         ]),
       ),
       Positioned(
-        left: margin,
-        top: math.max(104.0, height * .145),
-        child: SizedBox(
-          width: artWidth,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _graffitiTitle(titleSize),
-              SizedBox(height: math.min(24.0, height * .025)),
-              _busImage(artWidth),
-            ],
-          ),
+        left: margin * .55,
+        top: math.max(270.0, height * .365),
+        child: IgnorePointer(
+          child: _busImage(muralWidth),
         ),
       ),
       Positioned(
+        left: margin,
+        top: math.max(104.0, height * .145),
+        child: _graffitiTitle(titleSize),
+      ),
+      Positioned(
+        // The calendar is the foreground layer above the bus vector.
         top: math.max(155.0, height * .20),
         right: margin,
         child: GlassBookingCalendar(
@@ -334,10 +333,10 @@ class _VisaLandingState extends State<VisaLanding> {
     final padding = width < 400 ? 12.0 : 22.0;
     final contentWidth = width - 2 * padding;
     final calendarWidth = math.min(contentWidth, 460.0);
-    final busWidth = math.min(contentWidth, 680.0);
+    final muralWidth = math.min(width * 1.56, 700.0);
 
-    // Content determines the scroll height, so 320px phones and tablets
-    // cannot make the calendar overlap the vector bus.
+    // Calendar sets this stack's height; the mural is painted behind it.
+    // Both remain in the same scroll coordinate system on narrow phones.
     return SizedBox(
       width: width,
       child: Padding(
@@ -356,16 +355,29 @@ class _VisaLandingState extends State<VisaLanding> {
             _graffitiTitle(titleSize),
             const SizedBox(height: 16),
             Center(
-              child: GlassBookingCalendar(
-                key: const Key('booking-calendar'),
-                language: _language!,
-                mobile: true,
+              child: SizedBox(
                 width: calendarWidth,
-                onBook: _continueWithDate,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned(
+                      top: 145,
+                      left: (calendarWidth - muralWidth) / 2,
+                      child: IgnorePointer(
+                        child: _busImage(muralWidth),
+                      ),
+                    ),
+                    GlassBookingCalendar(
+                      key: const Key('booking-calendar'),
+                      language: _language!,
+                      mobile: true,
+                      width: calendarWidth,
+                      onBook: _continueWithDate,
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 34),
-            Center(child: _busImage(busWidth)),
             const SizedBox(height: 72),
           ],
         ),

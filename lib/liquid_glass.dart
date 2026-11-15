@@ -11,6 +11,7 @@ class LiquidGlass extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.blur = 8,
     this.strong = false,
+    this.tintOpacity = 1,
   });
 
   final Widget child;
@@ -18,6 +19,10 @@ class LiquidGlass extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final double blur;
   final bool strong;
+
+  /// Multiplier for the glass fill only. 0.75 shows approximately 25%
+  /// more of the underlying mural without dimming interactive text.
+  final double tintOpacity;
 
   @override
   Widget build(BuildContext context) {
@@ -54,12 +59,20 @@ class LiquidGlass extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: strong
                         ? [
-                            const Color(0xfffafaf9).withValues(alpha: .91),
-                            const Color(0xfff3f3f1).withValues(alpha: .79),
+                            const Color(0xfffafaf9).withValues(
+                              alpha: .91 * tintOpacity,
+                            ),
+                            const Color(0xfff3f3f1).withValues(
+                              alpha: .79 * tintOpacity,
+                            ),
                           ]
                         : [
-                            const Color(0xffffffff).withValues(alpha: .57),
-                            const Color(0xffefefed).withValues(alpha: .39),
+                            const Color(0xffffffff).withValues(
+                              alpha: .57 * tintOpacity,
+                            ),
+                            const Color(0xffefefed).withValues(
+                              alpha: .39 * tintOpacity,
+                            ),
                           ],
                   ),
                   borderRadius: borderRadius,

@@ -144,6 +144,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('bus is visibly layered behind glass calendar on desktop',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
+    await openApp(tester, width: 1440, height: 900);
+
+    final bus = tester.getRect(find.byKey(const Key('vector-bus-mural')));
+    final calendar = tester.getRect(find.byKey(const Key('booking-calendar')));
+    expect(bus.overlaps(calendar), isTrue);
+
+    final glass = tester.widget<LiquidGlass>(find.descendant(
+      of: find.byKey(const Key('booking-calendar')),
+      matching: find.byType(LiquidGlass),
+    ));
+    expect(glass.tintOpacity, closeTo(.75, .001));
+    expect(glass.blur, lessThan(6));
+  });
+
+  testWidgets('bus also shows behind calendar on a 320px phone',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
+    await openApp(tester, width: 320, height: 640);
+    final bus = tester.getRect(find.byKey(const Key('vector-bus-mural')));
+    final calendar = tester.getRect(find.byKey(const Key('booking-calendar')));
+    expect(bus.overlaps(calendar), isTrue);
+    expect(find.byKey(const Key('open-booking')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('mobile concrete, calendar and bus share scroll coordinates',
       (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});

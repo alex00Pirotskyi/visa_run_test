@@ -83,8 +83,10 @@ class _GlassBookingCalendarState extends State<GlassBookingCalendar> {
       width: widget.width,
       child: LiquidGlass(
         radius: widget.mobile ? 26 : 39,
-        blur: widget.mobile ? 5 : 11,
+        // Let the black bus graffiti show through the panel.
+        blur: widget.mobile ? 2.5 : 4.5,
         strong: true,
+        tintOpacity: .75,
         padding: EdgeInsets.fromLTRB(
           widget.mobile ? 15 : 29,
           widget.mobile ? 16 : 28,
