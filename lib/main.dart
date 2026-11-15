@@ -2,25 +2,23 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'balloon_mural.dart';
 import 'concrete_wall.dart';
+import 'graffiti_calendar.dart';
 import 'graffiti_widgets.dart';
-import 'stencil_mural.dart';
-import 'visa_i18n.dart';
 
 void main() => runApp(const VisaRunApp());
 
 class VisaRunApp extends StatelessWidget {
   const VisaRunApp({super.key});
-
   @override
   Widget build(BuildContext context) => MaterialApp(
+    title: 'VISA RUN — Graffiti Calendar',
     debugShowCheckedModeBanner: false,
-    title: 'VISA RUN — Stencil on concrete',
     theme: ThemeData(
       useMaterial3: true,
+      scaffoldBackgroundColor: const Color(0xffe8e6e3),
       fontFamily: 'Roboto',
-      scaffoldBackgroundColor: const Color(0xffb5b7b8),
       colorScheme: ColorScheme.fromSeed(seedColor: graffitiInk),
     ),
     home: const VisaLanding(),
@@ -29,492 +27,287 @@ class VisaRunApp extends StatelessWidget {
 
 class VisaLanding extends StatefulWidget {
   const VisaLanding({super.key});
-
   @override
   State<VisaLanding> createState() => _VisaLandingState();
 }
 
 class _VisaLandingState extends State<VisaLanding> {
-  static const languageKey = 'visa_run_language';
-
-  ui.FragmentShader? _wallShader;
+  static const _languageKey = 'visa_run_language';
   String? _language;
-  bool _languageReady = false;
-  final TextEditingController _message = TextEditingController();
-
-  String t(String key) => visaStrings[_language]![key]!;
+  bool _loaded = false;
+  ui.FragmentShader? _shader;
+  bool get _ru => _language == 'ru';
 
   @override
   void initState() {
     super.initState();
-    _readLanguage();
-    _readShader();
+    _restoreLanguage();
+    _loadShader();
   }
 
-  Future<void> _readLanguage() async {
-    String? saved;
+  Future<void> _restoreLanguage() async {
+    String? language;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final value = prefs.getString(languageKey);
-      if (value == 'en' || value == 'ru') saved = value;
+      final stored = prefs.getString(_languageKey);
+      if (stored == 'en' || stored == 'ru') language = stored;
     } catch (_) {
-      // No storage permission: the initial wall picker still works.
+      // A browser without storage still supports session-only selection.
     }
     if (!mounted) return;
     setState(() {
-      _language = saved;
-      _languageReady = true;
+      _language = language;
+      _loaded = true;
     });
   }
 
-  Future<void> _chooseLanguage(String value) async {
-    if (value != 'ru' && value != 'en') return;
-    setState(() => _language = value);
+  Future<void> _selectLanguage(String language) async {
+    if (language != 'en' && language != 'ru') return;
+    setState(() => _language = language);
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(languageKey, value);
+      await prefs.setString(_languageKey, language);
     } catch (_) {
-      // Session-only selection remains usable without storage.
+      // The current page can still use the selection.
     }
   }
 
-  Future<void> _readShader() async {
+  Future<void> _loadShader() async {
     try {
       final program =
           await ui.FragmentProgram.fromAsset('shaders/concrete.frag');
-      if (mounted) {
-        setState(() => _wallShader = program.fragmentShader());
-      }
+      if (mounted) setState(() => _shader = program.fragmentShader());
     } catch (_) {
-      // The painted architecture remains visible with its color fallback.
+      // Pale concrete fallback is always drawn.
     }
   }
 
-  @override
-  void dispose() {
-    _message.dispose();
-    super.dispose();
+  void _notice(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: graffitiInk,
+      ));
+  }
+
+  void _book(DateTime? date) {
+    if (date == null) {
+      _notice(_ru ? 'Сначала выберите дату поездки.'
+          : 'Select a travel date first.');
+      return;
+    }
+    final chosen = date.day.toString().padLeft(2, '0') + '/' +
+        date.month.toString().padLeft(2, '0') + '/' + date.year.toString();
+    _notice(_ru
+        ? 'Дата $chosen выбрана. Это демо — бронирование не подключено.'
+        : '$chosen selected. Demo only — booking is not connected.');
+  }
+
+  void _contact(String service) {
+    _notice(_ru
+        ? 'Ссылка на $service пока не настроена.'
+        : '$service contact link is not configured yet.');
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: LayoutBuilder(builder: (context, limits) {
-        final width = limits.maxWidth;
-        final height = limits.maxHeight;
-        final mobile = width < 970;
-        final inset = mobile ? 23.0 : 54.0;
+  Widget build(BuildContext context) => Scaffold(
+    body: LayoutBuilder(builder: (context, limits) {
+      final width = limits.maxWidth;
+      final viewportHeight = limits.maxHeight;
+      final mobile = width < 1000;
+      final stageHeight = mobile
+          ? math.max(1000.0, viewportHeight)
+          : math.max(760.0, viewportHeight);
 
-        // Crucial: architectural light, mineral shader, graffiti and
-        // editable content all belong to ONE vertically scrolling wall.
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: height),
-            child: Stack(children: [
-              Positioned.fill(
+      return SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: viewportHeight),
+          child: Stack(children: [
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  key: const Key('concrete-wall'),
+                  painter: ConcreteWallPainter(_shader),
+                ),
+              ),
+            ),
+            const Positioned.fill(
+              child: IgnorePointer(
                 child: RepaintBoundary(
                   child: CustomPaint(
-                    key: const Key('concrete-wall'),
-                    painter: ConcreteWallPainter(_wallShader),
+                    key: Key('concrete-surface-detail'),
+                    painter: PaleConcreteDetailsPainter(),
                   ),
                 ),
               ),
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: RepaintBoundary(
-                    child: CustomPaint(
-                      key: Key('architectural-concrete-light'),
-                      painter: ArchitecturalLightPainter(),
-                    ),
-                  ),
-                ),
-              ),
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1510),
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(inset, 20, inset, 33),
-                    child: !_languageReady
-                        ? SizedBox(height: math.max(540.0, height - 53))
-                        : _language == null
-                            ? _languageGate(mobile, height)
-                            : _site(mobile, width, height),
-                  ),
-                ),
-              ),
-              const Positioned.fill(
-                child: IgnorePointer(
-                  child: RepaintBoundary(
-                    child: CustomPaint(
-                      painter: PaintWeatheringPainter(),
-                    ),
-                  ),
-                ),
-              ),
-            ]),
-          ),
-        );
-      }),
-    );
-  }
+            ),
+            if (!_loaded)
+              SizedBox(height: stageHeight)
+            else if (_language == null)
+              _languageGate(mobile, stageHeight)
+            else if (mobile)
+              _mobileStage(width, stageHeight)
+            else
+              _desktopStage(width, stageHeight),
+          ]),
+        ),
+      );
+    }),
+  );
 
-  /// First-time visitor sees ONLY the language choices on the wall.
   Widget _languageGate(bool mobile, double height) => SizedBox(
-        height: math.max(570.0, height - 53),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StencilText('LANGUAGE  /  ЯЗЫК',
-                  fontSize: mobile ? 19 : 27,
-                  height: 1.1,
-                  letterSpacing: 1.5,
-                  wear: .20),
-              SizedBox(height: mobile ? 30 : 45),
-              _languageChoice('ENGLISH', 'en', mobile),
-              SizedBox(height: mobile ? 18 : 25),
-              _languageChoice('РУССКИЙ', 'ru', mobile),
-              const SizedBox(height: 19),
-              const CustomPaint(
-                painter: _PaintSwipePainter(),
-                child: SizedBox(width: 210, height: 20),
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _languageChoice(String label, String language, bool mobile) {
-    return TextButton(
-      key: Key('choose-$language'),
-      onPressed: () => _chooseLanguage(language),
-      style: TextButton.styleFrom(
-        foregroundColor: graffitiInk,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        overlayColor: graffitiInk.withValues(alpha: .05),
-        shape: const RoundedRectangleBorder(),
-      ),
-      child: StencilText(
-        label,
-        fontSize: mobile ? 47 : 86,
-        height: 1,
-        letterSpacing: mobile ? -2 : -4,
-      ),
-    );
-  }
-
-  Widget _site(bool mobile, double width, double viewportHeight) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _header(mobile),
-        SizedBox(height: mobile ? 43 : 21),
-        mobile ? _mobileHero(width) : _desktopHero(width, viewportHeight),
-        SizedBox(height: mobile ? 32 : 34),
-        _contactSection(mobile),
-        const SizedBox(height: 35),
-        _footer(mobile),
-      ],
-    );
-  }
-
-  Widget _header(bool mobile) => Row(
-        children: [
-          const Text(
-            'VISA RUN',
-            style: TextStyle(
-              color: graffitiInk,
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -1.4,
-            ),
-          ),
-          if (!mobile) ...[
-            const SizedBox(width: 6),
-            const SizedBox(
-              width: 44,
-              height: 26,
-              child: CustomPaint(painter: GraffitiPlaneMarkPainter()),
-            ),
-          ],
-          const Spacer(),
-          if (!mobile) ...[
-            _nav(t('runs')),
-            _nav(t('how')),
-            _nav(t('faq')),
-            _nav(t('contact')),
-            const SizedBox(width: 24),
-          ],
-          _languageSwitch(),
-        ],
-      );
-
-  Widget _nav(String label) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 13),
-        child: TextButton(
-          onPressed: () {}, // Intentionally a design-only demo.
-          style: TextButton.styleFrom(
-            foregroundColor: graffitiInk,
-            overlayColor: graffitiInk.withValues(alpha: .05),
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(15, 46),
-            shape: const RoundedRectangleBorder(),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: graffitiInk,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-              letterSpacing: .5,
-            ),
-          ),
-        ),
-      );
-
-  Widget _languageSwitch() => Row(
+    height: height,
+    child: Center(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _languageToggle('EN', 'en'),
-          const Text('/', style: TextStyle(fontSize: 14, color: graffitiInk)),
-          _languageToggle('RU', 'ru'),
+          StencilText(
+            'LANGUAGE / ЯЗЫК',
+            fontSize: mobile ? 20 : 30,
+            letterSpacing: 1,
+          ),
+          const SizedBox(height: 28),
+          _choose('ENGLISH', 'en', mobile),
+          const SizedBox(height: 15),
+          _choose('РУССКИЙ', 'ru', mobile),
         ],
-      );
-
-  Widget _languageToggle(String label, String value) {
-    final selected = value == _language;
-    return TextButton(
-      key: Key('switch-$value'),
-      onPressed: () => _chooseLanguage(value),
-      style: TextButton.styleFrom(
-        foregroundColor: selected ? graffitiChalk : graffitiInk,
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        minimumSize: const Size(36, 42),
-        overlayColor: graffitiInk.withValues(alpha: .05),
-        shape: const RoundedRectangleBorder(),
       ),
-      child: selected
-          ? CustomPaint(
-              painter: const GraffitiPlatePainter(seed: 66),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(7, 7, 7, 11),
-                child: Text(label,
-                    style: const TextStyle(
-                      color: graffitiChalk,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                    )),
-              ),
-            )
-          : Text(label,
-              style: const TextStyle(
-                color: graffitiInk,
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              )),
-    );
-  }
+    ),
+  );
 
-  Widget _desktopHero(double screenWidth, double viewportHeight) {
-    final titleSize = math.min(172.0, math.max(106.0, screenWidth * .115));
+  Widget _choose(String label, String code, bool mobile) => TextButton(
+    key: Key('choose-$code'),
+    style: TextButton.styleFrom(
+      foregroundColor: graffitiInk,
+      overlayColor: graffitiInk.withValues(alpha: .05),
+      shape: const RoundedRectangleBorder(),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+    ),
+    onPressed: () => _selectLanguage(code),
+    child: StencilText(
+      label,
+      fontSize: mobile ? 43 : 78,
+      height: 1,
+      letterSpacing: -2.1,
+      wear: .53,
+    ),
+  );
+
+  Widget _langSwitch() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _switch('EN', 'en'),
+      const Text('/', style: TextStyle(
+        color: graffitiInk, fontSize: 14, fontWeight: FontWeight.w900)),
+      _switch('RU', 'ru'),
+    ],
+  );
+
+  Widget _switch(String label, String code) => TextButton(
+    key: Key('switch-$code'),
+    onPressed: () => _selectLanguage(code),
+    style: TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      minimumSize: const Size(38, 44),
+      foregroundColor: graffitiInk,
+      shape: const RoundedRectangleBorder(),
+    ),
+    child: Text(label, style: TextStyle(
+      color: graffitiInk,
+      fontSize: 13,
+      fontWeight: _language == code ? FontWeight.w900 : FontWeight.w600,
+      decoration: _language == code ? TextDecoration.underline : null,
+      decorationThickness: 2.2,
+    )),
+  );
+
+  Widget _calendar(double width) => Transform.rotate(
+    angle: -.048,
+    alignment: Alignment.center,
+    child: RepaintBoundary(
+      child: GraffitiBookingCalendar(
+        width: width,
+        language: _language!,
+        onBook: _book,
+      ),
+    ),
+  );
+
+  Widget _contacts(bool mobile) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      GraffitiButton(
+        key: const Key('contact-whatsapp'),
+        label: 'WHATSAPP',
+        compact: true,
+        width: mobile ? 114 : 168,
+        showArrow: false,
+        onPressed: () => _contact('WhatsApp'),
+      ),
+      const SizedBox(height: 8),
+      GraffitiButton(
+        key: const Key('contact-telegram'),
+        label: 'TELEGRAM',
+        compact: true,
+        width: mobile ? 114 : 168,
+        showArrow: false,
+        onPressed: () => _contact('Telegram'),
+      ),
+    ],
+  );
+
+  Widget _desktopStage(double width, double height) {
+    final left = math.max(35.0, width * .056);
+    final cardWidth = math.min(315.0, math.max(260.0, width * .275));
     return SizedBox(
-      height: math.max(620.0, math.min(730.0, viewportHeight * .82)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(flex: 50, child: _heroCopy(titleSize, false)),
-          Expanded(
-            flex: 50,
-            child: Semantics(
-              label: t('illustration'),
-              child: const RepaintBoundary(
-                child: CustomPaint(painter: StencilMuralPainter()),
+      height: height,
+      child: Stack(children: [
+        const Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                key: Key('balloon-girl-art'),
+                painter: BalloonGirlPainter(),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        Positioned(top: 17, right: 37, child: _langSwitch()),
+        Positioned(top: 72, left: left, child: _calendar(cardWidth)),
+        Positioned(left: left + 7, bottom: 72, child: _contacts(false)),
+      ]),
     );
   }
 
-  Widget _mobileHero(double screenWidth) {
-    final titleSize = math.min(112.0, math.max(72.0, screenWidth * .235));
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _heroCopy(titleSize, true),
-      const SizedBox(height: 9),
-      SizedBox(
-        height: screenWidth < 400 ? 345 : 410,
-        child: Semantics(
-          label: t('illustration'),
-          child: const RepaintBoundary(
-            child: CustomPaint(painter: StencilMuralPainter()),
-          ),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _heroCopy(double titleSize, bool mobile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment:
-          mobile ? MainAxisAlignment.start : MainAxisAlignment.center,
-      children: [
-        StencilText(
-          'VISA\nRUN',
-          fontSize: titleSize,
-          height: .82,
-          letterSpacing: -titleSize * .045,
-          wear: .94,
-        ),
-        SizedBox(height: mobile ? 12 : 26),
-        StencilText(
-          t('headline'),
-          fontSize: mobile ? 21 : 29,
-          height: 1.05,
-          letterSpacing: -.6,
-          wear: .58,
-        ),
-        const CustomPaint(
-          painter: _PaintSwipePainter(),
-          child: SizedBox(width: 280, height: 22),
-        ),
-        SizedBox(height: mobile ? 12 : 27),
-        Text(
-          t('intro'),
-          style: TextStyle(
-            color: graffitiInk.withValues(alpha: .84),
-            fontSize: mobile ? 13 : 16,
-            fontWeight: FontWeight.w700,
-            height: 1.45,
-          ),
-        ),
-        SizedBox(height: mobile ? 19 : 32),
-        Wrap(
-          spacing: 12,
-          runSpacing: 7,
-          children: [
-            GraffitiButton(label: t('runs'), compact: mobile),
-            GraffitiButton(label: t('how'), compact: mobile),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          t('demo'),
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: graffitiInk.withValues(alpha: .68),
-            letterSpacing: .8,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _contactSection(bool mobile) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: mobile ? 570 : 850),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          StencilText(
-            t('fieldTitle'),
-            fontSize: mobile ? 28 : 43,
-            height: 1.07,
-            letterSpacing: -.8,
-            wear: .45,
-          ),
-          const SizedBox(height: 16),
-          GraffitiTextField(
-            hint: t('fieldHint'),
-            controller: _message,
-          ),
-          const SizedBox(height: 15),
-          Wrap(
-            spacing: 18,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              GraffitiButton(label: t('sendDemo'), compact: true),
-              Text(
-                t('fieldNote'),
-                style: TextStyle(
-                  color: graffitiInk.withValues(alpha: .75),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: .7,
-                ),
+  Widget _mobileStage(double width, double height) {
+    final cardWidth = math.min(290.0, width - 36);
+    return SizedBox(
+      height: height,
+      child: Stack(children: [
+        Positioned(right: 18, top: 10, child: _langSwitch()),
+        Positioned(top: 60, left: (width - cardWidth) / 2,
+          child: _calendar(cardWidth)),
+        const Positioned(
+          top: 435,
+          left: 0,
+          right: 0,
+          height: 510,
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                key: Key('balloon-girl-art'),
+                painter: BalloonGirlPainter(mobile: true),
               ),
-            ],
+            ),
           ),
-        ]),
-      ),
+        ),
+        Positioned(left: 8, top: 715, child: _contacts(true)),
+      ]),
     );
   }
-
-  Widget _footer(bool mobile) {
-    return Column(children: [
-      Container(height: 1.5, color: graffitiInk.withValues(alpha: .65)),
-      const SizedBox(height: 16),
-      if (mobile)
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(t('quote'),
-              style: const TextStyle(
-                color: graffitiInk,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: .7,
-              )),
-        )
-      else
-        Row(children: [
-          Expanded(
-            child: Text(t('quote'),
-                style: const TextStyle(
-                  color: graffitiInk,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                )),
-          ),
-          Text(t('closing'),
-              style: const TextStyle(
-                color: graffitiInk,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-              )),
-        ]),
-    ]);
-  }
-}
-
-/// A sprayed underline with drips, not a perfectly straight Material divider.
-class _PaintSwipePainter extends CustomPainter {
-  const _PaintSwipePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final ink = Paint()..color = graffitiInk.withValues(alpha: .93);
-    final path = Path()
-      ..moveTo(0, 6)
-      ..lineTo(size.width * .94, 1)
-      ..lineTo(size.width, 4)
-      ..lineTo(size.width * .76, 8)
-      ..lineTo(size.width * .21, 12)
-      ..lineTo(0, 8)
-      ..close();
-    canvas.drawPath(path, ink);
-    for (final x in [.08, .46, .83]) {
-      final dx = size.width * x;
-      final end = x == .46 ? 20.0 : 15.0;
-      canvas.drawLine(Offset(dx, 8), Offset(dx, end),
-          ink..strokeWidth = 2.3..strokeCap = StrokeCap.round);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PaintSwipePainter oldDelegate) => false;
 }

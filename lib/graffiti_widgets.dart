@@ -211,11 +211,15 @@ class GraffitiButton extends StatefulWidget {
     required this.label,
     this.onPressed,
     this.compact = false,
+    this.width,
+    this.showArrow = true,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool compact;
+  final double? width;
+  final bool showArrow;
 
   @override
   State<GraffitiButton> createState() => _GraffitiButtonState();
@@ -236,7 +240,7 @@ class _GraffitiButtonState extends State<GraffitiButton> {
         overlayColor: graffitiChalk.withValues(alpha: .08),
         padding: EdgeInsets.zero,
         shape: const RoundedRectangleBorder(),
-        minimumSize: Size(widget.compact ? 150 : 172, 60),
+        minimumSize: Size(widget.width ?? (widget.compact ? 150 : 172), 60),
       ),
       child: CustomPaint(
         painter: GraffitiPlatePainter(
@@ -244,7 +248,7 @@ class _GraffitiButtonState extends State<GraffitiButton> {
           seed: widget.label.hashCode,
         ),
         child: SizedBox(
-          width: widget.compact ? 204 : 230,
+          width: widget.width ?? (widget.compact ? 204 : 230),
           child: Padding(
             padding: EdgeInsets.fromLTRB(widget.compact ? 15 : 20, 13,
                 widget.compact ? 15 : 20, 22),
@@ -259,8 +263,10 @@ class _GraffitiButtonState extends State<GraffitiButton> {
                   letterSpacing: .7,
                 ),
               )),
-              const SizedBox(width: 9),
-              const Icon(Icons.arrow_forward, color: graffitiChalk, size: 20),
+              if (widget.showArrow) ...[
+                const SizedBox(width: 9),
+                const Icon(Icons.arrow_forward, color: graffitiChalk, size: 20),
+              ],
             ]),
           ),
         ),

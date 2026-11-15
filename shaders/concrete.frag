@@ -1,7 +1,7 @@
 #include <flutter/runtime_effect.glsl>
 
-// Fine, static cast-concrete grain: mineral inclusions, pores, and shallow
-// clouds. No time uniforms or repaint loop.
+// Static pale concrete: tiny pores, quiet aggregate and fine mineral grain.
+// No uniforms; one shader draw per wall render.
 out vec4 fragColor;
 
 float hash21(vec2 p) {
@@ -23,17 +23,17 @@ float noise(vec2 p) {
 
 void main() {
   vec2 p = FlutterFragCoord().xy;
-  float cloud = noise(p * .0028);
-  float grain = noise(p * .038);
-  float sand = noise(p * .32);
-  float tiny = hash21(floor(p * .94));
-  float pits = smoothstep(.87, .975, noise(p * .17));
-  float tone = .736
-    + (cloud - .5) * .103
-    + (grain - .5) * .081
-    + (sand - .5) * .032
-    + (tiny - .5) * .017
-    - .025 * pits;
-  vec3 concrete = vec3(tone * .994, tone * 1.002, tone * 1.007);
+  float large = noise(p * .0035);
+  float medium = noise(p * .028);
+  float tiny = noise(p * .24);
+  float sand = hash21(floor(p * .91));
+  float pores = smoothstep(.88, .976, noise(p * .18));
+  float value = .915
+    + (large - .5) * .071
+    + (medium - .5) * .043
+    + (tiny - .5) * .023
+    + (sand - .5) * .014
+    - pores * .022;
+  vec3 concrete = vec3(value * .998, value * .994, value * .989);
   fragColor = vec4(concrete, 1.);
 }

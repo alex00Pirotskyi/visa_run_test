@@ -1,31 +1,32 @@
-# VISA RUN — Painted-on-concrete Flutter prototype
+# VISA RUN — Balloon Mural Demo
 
-An original black-stencil graffiti website concept for visa runs, built entirely in **Flutter Web**. This is a **design-only demo**: there are no working bookings, messages, application forms, or real visa services.
+Flutter Web, minimalist concrete-and-graffiti single-screen concept. The background is a **static procedural concrete shader** and a lightweight, faithful **vector reconstruction of the user-provided girl-and-balloon reference** (a few hundred contour points, with no PNG/JPEG downloads).
 
-## Visual direction
+## Design
 
-The web UI is a mural painted onto a believable architectural concrete wall, not floating cards over a texture.
+- Pale grainy concrete wall with tiny marks, no floor, shadow shafts or distracting seams
+- Black stencil silhouette of a girl reaching towards a single **red heart balloon**
+- Angled **VISA RUN** calendar near the upper-left corner, with selectable future days (current month and up to 12 months ahead)
+- One `BOOK VISA RUN` graffiti-style button; pressing it shows a demo-only notice because booking is not configured
+- Two separate black graffiti buttons: **WhatsApp** and **Telegram**. They display an honest not-configured notice until official contact links are supplied
+- Tiny EN / RU language switch in the corner; on a first visit only the language picker appears
+- Works on desktop and narrow phones: desktop mural occupies the background, mobile layout places the calendar above the artwork and contacts to the girl's left
+- No large image assets, external fonts, looping animations, parallax, tracking, or backend
 
-- **`shaders/concrete.frag`** — static low-frequency mineral clouding, concrete pores, grain and aggregate. No time uniform or animation loop
-- **`lib/concrete_wall.dart`** — panel seams, form-tie holes, directional diagonal sunlight and hard-edged window shadows on a concrete floor; one stable `CustomPainter` pass
-- **`lib/stencil_mural.dart`** — original vector stencil artwork featuring a walking backpacker, rolling suitcase, airport sign, plane and border-control icon
-- **`lib/graffiti_widgets.dart`** — reusable weathered `StencilText`, `GraffitiButton`, `GraffitiTextField`; chipped ink, spray and drip details, all drawn by Flutter
-- **`lib/main.dart`** — responsive composition; real text field can accept demo text but never transmits it. Stencil-themed language switch
-- **`lib/visa_i18n.dart`** — English and Russian UI copy
+## Structure
 
-**Lightweight by design:** no full-screen raster backgrounds, external font downloads, canvas animation, parallax, third-party image requests, or UI animation timers. The shader and paint layers are static and wrapped in repaint boundaries, scrolling as a single wall.
+- `lib/main.dart`: minimalist responsive scene, locale persistence with `shared_preferences`, demo notices
+- `lib/balloon_mural.dart`: cached vector contour paths for the reference artwork, painting black and red
+- `lib/graffiti_calendar.dart`: a real locally interactive monthly date picker in a roughly painted frame
+- `lib/graffiti_widgets.dart`: existing reusable custom graffiti-style buttons and text components
+- `shaders/concrete.frag`: fast static mineral-grain shader
+- `lib/concrete_wall.dart`: subtle wall speckles and staining
 
-The design was informed by the user's approved black stencil travel-mural mockup; no existing Banksy artwork is reproduced.
+## Local development
 
-## Languages
+Flutter 3.47.2+:
 
-First visit displays **only** ENGLISH and РУССКИЙ on the wall. Once selected, the complete mural appears in the selected language; Flutter Web `shared_preferences` stores the code locally under `visa_run_language`. Returning visitors skip the picker. The `EN / RU` control allows switching later. Without browser storage, the session is still usable.
-
-## Develop and test
-
-Flutter 3.47.2 or newer:
-
-```bash
+```sh
 flutter pub get
 flutter analyze
 flutter test
@@ -33,12 +34,19 @@ flutter build web --release
 flutter run -d chrome
 ```
 
-The CI tests exercise first-visit language choice, both languages, persistence, responsive layouts, wall scrolling, and editing a demo field.
+## Demo limitations and rights
 
-## Cloudflare deployment
+**Booking and contact details are not connected.** No requests, dates, or personal information are transmitted. The calendar only stores the selected date in widget state.
 
-The project is separate from Evil Space: standalone Worker `visa-run-test`, target URL **https://visa-run-test.evils.space**. Its Worker assets are the Flutter release build, no D1 or API required. A deployment job triggers on `main`.
+The girl's silhouette is an adaptation of artwork in a user-provided image. Check appropriate permissions before using that artwork in a public commercial site; a commissioned original is preferable for production.
 
-To publish, add repository Actions secrets **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`**, scoped for the correct Cloudflare account and domain, and rerun **Deploy demo to Cloudflare**. The GitHub build may pass before the site is actually deployed.
+## Deployment
 
-Do not modify or reuse the existing production `evil-space` Worker.
+GitHub repository: `alex00Pirotskyi/visa_run_test`.
+Dedicated Cloudflare Worker: `visa-run-test`, separate from the production Evil Space Worker.
+Intended domain: `https://visa-run-test.evils.space`.
+
+To deploy from GitHub Actions, configure `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` as Actions secrets in **this** repository and run
+`Deploy demo to Cloudflare`. A successful Flutter build does not by itself
+mean the domain is live.
