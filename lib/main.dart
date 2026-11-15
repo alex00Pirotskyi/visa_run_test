@@ -123,7 +123,7 @@ class _VisaLandingState extends State<VisaLanding> {
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(compact ? 24 : 62, 27, compact ? 24 : 62, 22),
                     child: !_languageLoaded
-                        ? SizedBox(height: math.max(520, h - 49))
+                        ? SizedBox(height: math.max(520.0, h - 49))
                         : _language == null
                             ? _languagePicker(compact, h)
                             : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -154,7 +154,7 @@ class _VisaLandingState extends State<VisaLanding> {
 
   /// First-time visitors see only two text choices, embedded in the wall.
   Widget _languagePicker(bool compact, double viewportHeight) => SizedBox(
-    height: math.max(520, viewportHeight - 49),
+    height: math.max(520.0, viewportHeight - 49),
     child: Center(
       child: Column(mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
