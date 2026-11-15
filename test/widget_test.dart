@@ -16,6 +16,7 @@ void main() {
     expect(find.text('HOW IT WORKS'), findsOneWidget);
     expect(find.text('CONTACT US'), findsOneWidget);
     expect(find.byKey(const Key('concrete-wall')), findsOneWidget);
+    expect(find.byKey(const Key('architectural-concrete-light')), findsOneWidget);
   });
 
   testWidgets('the concrete moves with the scrolled graffiti content', (tester) async {
@@ -27,14 +28,17 @@ void main() {
     await tester.pumpAndSettle();
 
     final wall = find.byKey(const Key('concrete-wall'));
+    final sunlight = find.byKey(const Key('architectural-concrete-light'));
     expect(
       find.ancestor(of: wall, matching: find.byType(SingleChildScrollView)),
       findsOneWidget,
     );
 
     final startY = tester.getTopLeft(wall).dy;
+    final lightStartY = tester.getTopLeft(sunlight).dy;
     await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -220));
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(wall).dy, lessThan(startY));
+    expect(tester.getTopLeft(sunlight).dy, lessThan(lightStartY));
   });
 }

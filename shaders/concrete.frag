@@ -1,7 +1,7 @@
 #include <flutter/runtime_effect.glsl>
 
-// Low-contrast poured concrete. No animation, uniforms, vignette or heavy
-// noise. Local coordinates tie it to the scrolling wall without extra work.
+// Cool grey concrete microstructure beneath the static architectural
+// sunlight painter. No time uniform; the shader is never animated.
 out vec4 fragColor;
 
 float hash21(vec2 p) {
@@ -23,18 +23,15 @@ float noise(vec2 p) {
 
 void main() {
   vec2 p = FlutterFragCoord().xy;
-  float mineral = noise(p * .006);
-  float fine = noise(p * .14);
-  float pores = smoothstep(.84, .95, noise(p * .24));
-  float softShade = noise(p * .0018);
-
-  // Roughly 90% flatter than the earlier mottled texture. Ink is allowed to
-  // show the mineral surface through semi-transparent painted colours.
-  float value = .725
-    + (mineral - .5) * .041
-    + (fine - .5) * .024
-    + (softShade - .5) * .026
-    - pores * .014;
-  vec3 concrete = vec3(value * 1.012, value, value * .964);
-  fragColor = vec4(concrete, 1.);
+  float big = noise(p * .003);
+  float fine = noise(p * .026);
+  float tiny = noise(p * .20);
+  float pores = smoothstep(.86, .97, noise(p * .17));
+  float v = .733
+    + (big - .5) * .055
+    + (fine - .5) * .045
+    + (tiny - .5) * .023
+    - pores * .019;
+  vec3 grey = vec3(v * .995, v * 1.002, v * 1.004);
+  fragColor = vec4(grey, 1.);
 }

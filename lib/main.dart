@@ -14,17 +14,18 @@ class VisaRunApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: const Color(0xffb7b6ad),
+      scaffoldBackgroundColor: const Color(0xffb4b6b7),
       fontFamily: 'Roboto',
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffae2d24)),
+      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff1c1c1b)),
     ),
     home: const VisaLanding(),
   );
 }
 
-const ink = Color(0xff20211e);
-const spray = Color(0xffa92c25);
-const chalk = Color(0xffede9dd);
+// A single monochrome pigment is used everywhere; no red accent paint.
+const ink = Color(0xff181919);
+const spray = Color(0xff181919);
+const chalk = Color(0xffe1e1df);
 
 class VisaLanding extends StatefulWidget {
   const VisaLanding({super.key});
@@ -73,7 +74,10 @@ class _VisaLandingState extends State<VisaLanding> {
               const Positioned.fill(
                 child: IgnorePointer(
                   child: RepaintBoundary(
-                    child: CustomPaint(painter: WallMarksPainter()),
+                    child: CustomPaint(
+                      key: const Key('architectural-concrete-light'),
+                      painter: WallMarksPainter(),
+                    ),
                   ),
                 ),
               ),
@@ -134,7 +138,7 @@ class _VisaLandingState extends State<VisaLanding> {
     height: 705,
     child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Expanded(flex: 52, child: _copy(false)),
-      Expanded(flex: 48, child: Semantics(label: 'Original graffiti-style silhouette of a traveler carrying a suitcase beside a red spray-painted sun',
+      Expanded(flex: 48, child: Semantics(label: 'Original black stencil-graffiti silhouette of a traveler with luggage painted onto sunlit concrete',
         child: const CustomPaint(painter: TravelerPainter()))),
     ]),
   );
@@ -251,7 +255,7 @@ class ConcretePainter extends CustomPainter {
   ConcretePainter(this.shader);
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xffb9b7ad));
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xffb6b7b8));
     if (shader == null) return;
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
@@ -259,23 +263,193 @@ class ConcretePainter extends CustomPainter {
   bool shouldRepaint(covariant ConcretePainter oldDelegate) => shader != oldDelegate.shader;
 }
 
+/// Architectural concrete cast in a single static pass.
+/// Panel joints, oblique daylight and the floor all belong to the same
+/// scrollable canvas as the painted lettering. No animation or image fetch.
 class WallMarksPainter extends CustomPainter {
   const WallMarksPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
-    final r = math.Random(311);
-    final p = Paint()..style = PaintingStyle.fill;
-    for (var i = 0; i < 90; i++) {
-      final x = r.nextDouble() * size.width;
-      final y = r.nextDouble() * size.height;
-      p.color = ink.withValues(alpha: .014 + r.nextDouble() * .025);
-      canvas.drawCircle(Offset(x, y), .4 + r.nextDouble() * 1.6, p);
+    final w = size.width;
+    final h = size.height;
+    final floorY = h * .735;
+    final wall = Rect.fromLTWH(0, 0, w, floorY);
+
+    canvas.save();
+    canvas.clipRect(wall);
+
+    // Gentle upper-left occlusion, pale grey towards the sunlight.
+    canvas.drawRect(
+      wall,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(0, 0),
+          Offset(w * .86, h * .72),
+          const [
+            Color(0x64131617),
+            Color(0x1C333637),
+            Color(0x00FFFFFF),
+            Color(0x18FFFFFF),
+          ],
+          const [0, .38, .7, 1],
+        ),
+    );
+
+    // Large sunlit region, like a shaft coming from a high right window.
+    // Deliberately geometric and static: architecture, not a filter effect.
+    final wash = Path()
+      ..moveTo(w * 1.12, h * .23)
+      ..lineTo(w * 1.12, floorY)
+      ..lineTo(w * .22, floorY)
+      ..close();
+    canvas.drawPath(wash, Paint()..color = const Color(0x43FFFFFF));
+
+    // Soft outer penumbra around the window beam.
+    final fringe = Path()
+      ..moveTo(w * 1.17, h * .105)
+      ..lineTo(w * 1.24, h * .24)
+      ..lineTo(w * .39, floorY)
+      ..lineTo(-w * .035, floorY)
+      ..close();
+    canvas.drawPath(fringe, Paint()..color = const Color(0x22FFFFFF));
+
+    // Distinct sun stripe seen in the reference; polygon edges are crisp.
+    final sunBeam = Path()
+      ..moveTo(w * 1.11, h * .122)
+      ..lineTo(w * 1.19, h * .206)
+      ..lineTo(w * .32, floorY)
+      ..lineTo(w * .115, floorY)
+      ..close();
+    canvas.drawPath(sunBeam, Paint()..color = const Color(0x9CFFFFFF));
+
+    // A second quiet edge of light, as cast by adjacent glazing.
+    final secondBeam = Path()
+      ..moveTo(w * 1.21, h * .45)
+      ..lineTo(w * 1.21, h * .54)
+      ..lineTo(w * .87, floorY)
+      ..lineTo(w * .70, floorY)
+      ..close();
+    canvas.drawPath(secondBeam, Paint()..color = const Color(0x39FFFFFF));
+
+    // Large, realistically recessed prefabricated concrete panel joints.
+    void verticalJoint(double x) {
+      canvas.drawRect(
+        Rect.fromLTWH(x - 1.8, 0, 3, floorY),
+        Paint()..color = const Color(0x41090A0A),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(x + 1.2, 0, .9, floorY),
+        Paint()..color = const Color(0x65FFFFFF),
+      );
     }
-    p.color = ink.withValues(alpha: .08);
-    canvas.drawRect(Rect.fromLTWH(0, size.height * .89, size.width, 1), p);
-    final text = TextPainter(text: TextSpan(text: '◄  EXIT / ENTRY  ►', style: TextStyle(color: ink.withValues(alpha: .10), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 4)), textDirection: TextDirection.ltr)..layout();
-    text.paint(canvas, Offset(size.width * .54, size.height * .94));
+
+    void horizontalJoint(double y) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, y - 1.5, w, 2.4),
+        Paint()..color = const Color(0x460A0B0C),
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(0, y + .9, w, .9),
+        Paint()..color = const Color(0x55FFFFFF),
+      );
+    }
+
+    final panelW = w < 700 ? w * .60 : w * .345;
+    for (var x = panelW; x < w; x += panelW) {
+      verticalJoint(x);
+    }
+    horizontalJoint(h * .045);
+    horizontalJoint(h * .475);
+
+    // Small form-tie holes and mineral pinholes, fixed to the wall.
+    final random = math.Random(419);
+    for (var i = 0; i < 96; i++) {
+      final x = random.nextDouble() * w;
+      final y = random.nextDouble() * floorY;
+      final radius = .45 + random.nextDouble() * 1.45;
+      canvas.drawCircle(
+        Offset(x, y),
+        radius,
+        Paint()..color = const Color(0x42161919),
+      );
+      if (i % 4 == 0) {
+        canvas.drawCircle(
+          Offset(x + radius * .55, y + radius * .7),
+          radius * .60,
+          Paint()..color = const Color(0x52FFFFFF),
+        );
+      }
+    }
+    for (var x = panelW * .13; x < w; x += panelW) {
+      for (final y in [h * .060, h * .448]) {
+        canvas.drawCircle(
+          Offset(x, y), 2.2,
+          Paint()..color = const Color(0x7A252626),
+        );
+        canvas.drawCircle(
+          Offset(x + .6, y + .7), .8,
+          Paint()..color = const Color(0x43FFFFFF),
+        );
+      }
+    }
+    canvas.restore();
+
+    // Floor plane below the wall. Lighting is also static and scrolls
+    // with the entire composition (no parallax or GPU redraw loop).
+    final floor = Rect.fromLTRB(0, floorY, w, h);
+    canvas.drawRect(
+      floor,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          Offset(0, floorY),
+          Offset(w * .13, h),
+          const [
+            Color(0xffc9cbca),
+            Color(0xff969998),
+            Color(0xff707373),
+          ],
+          const [0, .48, 1],
+        ),
+    );
+
+    // A broad near-white patch where the sun hits the floor.
+    final floorLight = Path()
+      ..moveTo(0, floorY + 2)
+      ..lineTo(w * .95, floorY + 2)
+      ..lineTo(w * 1.12, h * .87)
+      ..lineTo(-w * .12, h * .84)
+      ..close();
+    canvas.drawPath(floorLight, Paint()..color = const Color(0xDDF6F7F5));
+
+    // Window mullion shadows on the illuminated ground.
+    final sillShadow = Path()
+      ..moveTo(0, floorY + 20)
+      ..lineTo(w, floorY + 44)
+      ..lineTo(w, floorY + 49)
+      ..lineTo(0, floorY + 25)
+      ..close();
+    canvas.drawPath(sillShadow, Paint()..color = const Color(0x5B525758));
+
+    final floorBar = Path()
+      ..moveTo(0, h * .806)
+      ..lineTo(w, h * .842)
+      ..lineTo(w, h * .854)
+      ..lineTo(0, h * .818)
+      ..close();
+    canvas.drawPath(floorBar, Paint()..color = const Color(0x60535959));
+
+    // The wall / floor transition is a real architectural edge.
+    canvas.drawRect(
+      Rect.fromLTWH(0, floorY - 2.5, w, 2.5),
+      Paint()..color = const Color(0x72070707),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(0, floorY, w, 2),
+      Paint()..color = const Color(0x8FFFFFFF),
+    );
   }
+
   @override
   bool shouldRepaint(covariant WallMarksPainter oldDelegate) => false;
 }
@@ -289,8 +463,8 @@ class PigmentWearPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final random = math.Random(709);
-    final fleck = Paint()..color = const Color(0x35b9b7ad);
-    for (var i = 0; i < 440; i++) {
+    final fleck = Paint()..color = const Color(0x23b5b6b7);
+    for (var i = 0; i < 320; i++) {
       final x = random.nextDouble() * size.width;
       final y = random.nextDouble() * size.height;
       canvas.drawCircle(
@@ -315,19 +489,31 @@ class TravelerPainter extends CustomPainter {
     canvas.scale(scale);
     final black = Paint()..color = ink..style = PaintingStyle.fill;
 
-    // Loose spray halo, painted as layered broken arcs rather than a perfect circle.
-    for (int i = 0; i < 6; i++) {
-      canvas.drawArc(Rect.fromCircle(center: const Offset(290, 263), radius: 176.0 + i * 5), -.95 + i * .08, 3.95 - i * .065, false,
-        Paint()..color = spray.withValues(alpha: .75 - i * .1)..style = PaintingStyle.stroke..strokeWidth = 17 - i * 2);
+    // Original monochrome stencil halo: old red paint is removed.
+    // Broken black overspray stays subordinate to the photographic wall.
+    for (int i = 0; i < 5; i++) {
+      canvas.drawArc(
+        Rect.fromCircle(center: const Offset(290, 263), radius: 176.0 + i * 5),
+        -.95 + i * .08,
+        3.95 - i * .065,
+        false,
+        Paint()
+          ..color = ink.withValues(alpha: .24 - i * .035)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 11 - i,
+      );
     }
-    canvas.drawCircle(const Offset(290, 263), 136, Paint()..color = spray.withValues(alpha: .10));
+    canvas.drawCircle(
+      const Offset(290, 263), 136,
+      Paint()..color = ink.withValues(alpha: .035),
+    );
     final random = math.Random(18);
     for (int i = 0; i < 145; i++) {
       final ang = random.nextDouble() * math.pi * 2;
       final rad = 132 + random.nextDouble() * 122;
       final center = Offset(290 + math.cos(ang) * rad, 263 + math.sin(ang) * rad);
       canvas.drawCircle(center, .4 + random.nextDouble() * 2.1,
-        Paint()..color = spray.withValues(alpha: random.nextDouble() * .55));
+        Paint()..color = spray.withValues(alpha: random.nextDouble() * .30));
     }
 
     // A winged paper plane representing freedom of movement.
