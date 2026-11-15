@@ -10,6 +10,14 @@ Original art-directed Flutter Web landing page. Purpose: **visual-only prototype
 - Buttons have pointer hover, keyboard focus and tap visual feedback, but intentionally **do nothing**.
 - **The full architectural scene (sunlight, panels, floor) scrolls with the typography and black stencil artwork.** There is no viewport-anchored parallax, timer, moving sunlight, expensive blur, or background animation. The painters are wrapped in repaint boundaries. No external fonts or packages.
 
+## Language preferences
+
+- New visitors see **only ENGLISH / РУССКИЙ stencil text** on the concrete wall. No hero, navigation or booking buttons appear until a language has been chosen.
+- The language changes immediately and is saved locally with Flutter Web `shared_preferences` under `visa_run_language`. Returning visitors load directly into the saved language.
+- A subtle **EN / RU** switch remains painted into the header, with the active choice underlined. All public copy and the traveler stencil's graffiti word are translated; the VISA RUN brand stays unchanged.
+- If the browser blocks local storage, the chosen language still works for the current tab.
+- There is no new backend, API or tracking.
+
 ## Development
 
 Use Flutter 3.47.2+.

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'visa_i18n.dart';
 
 void main() => runApp(const VisaRunApp());
 
@@ -35,10 +37,44 @@ class VisaLanding extends StatefulWidget {
 
 class _VisaLandingState extends State<VisaLanding> {
   ui.FragmentShader? shader;
+  static const _languageKey = 'visa_run_language';
+  bool _languageLoaded = false;
+  String? _language;
+
+  String _t(String key) => visaStrings[_language]![key]!;
+
   @override
   void initState() {
     super.initState();
+    _loadLanguage();
     _loadShader();
+  }
+
+  Future<void> _loadLanguage() async {
+    String? saved;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.getString(_languageKey);
+      if (value == 'en' || value == 'ru') saved = value;
+    } catch (_) {
+      // Browser storage can be disabled; still allow a session-only choice.
+    }
+    if (!mounted) return;
+    setState(() {
+      _language = saved;
+      _languageLoaded = true;
+    });
+  }
+
+  Future<void> _chooseLanguage(String value) async {
+    if (value != 'en' && value != 'ru') return;
+    setState(() => _language = value);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_languageKey, value);
+    } catch (_) {
+      // Remain usable for this session even if the write was rejected.
+    }
   }
 
   Future<void> _loadShader() async {
@@ -86,13 +122,17 @@ class _VisaLandingState extends State<VisaLanding> {
                   constraints: const BoxConstraints(maxWidth: 1470),
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(compact ? 24 : 62, 27, compact ? 24 : 62, 22),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      _header(compact),
-                      SizedBox(height: compact ? 26 : 20),
-                      if (compact) _mobileHero() else _desktopHero(),
-                      SizedBox(height: compact ? 30 : 38),
-                      _footer(compact),
-                    ]),
+                    child: !_languageLoaded
+                        ? SizedBox(height: math.max(520, h - 49))
+                        : _language == null
+                            ? _languagePicker(compact, h)
+                            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                                _header(compact),
+                                SizedBox(height: compact ? 26 : 20),
+                                if (compact) _mobileHero() else _desktopHero(),
+                                SizedBox(height: compact ? 30 : 38),
+                                _footer(compact),
+                              ]),
                   ),
                 ),
               ),
@@ -112,45 +152,114 @@ class _VisaLandingState extends State<VisaLanding> {
     );
   }
 
+  /// First-time visitors see only two text choices, embedded in the wall.
+  Widget _languagePicker(bool compact, double viewportHeight) => SizedBox(
+    height: math.max(520, viewportHeight - 49),
+    child: Center(
+      child: Column(mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('LANGUAGE  /  ЯЗЫК',
+            style: TextStyle(color: ink, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 3)),
+          const SizedBox(height: 16),
+          const Text('CHOOSE / ВЫБЕРИ',
+            style: TextStyle(color: ink, fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 1.6)),
+          SizedBox(height: compact ? 16 : 27),
+          _languageChoice('ENGLISH', 'en', compact),
+          SizedBox(height: compact ? 7 : 11),
+          _languageChoice('РУССКИЙ', 'ru', compact),
+          const SizedBox(height: 24),
+          Container(width: 125, height: 4, color: ink.withValues(alpha: .78)),
+        ],
+      ),
+    ),
+  );
+
+  Widget _languageChoice(String label, String language, bool compact) => TextButton(
+    key: Key('choose-$language'),
+    onPressed: () => _chooseLanguage(language),
+    style: TextButton.styleFrom(
+      foregroundColor: ink,
+      padding: EdgeInsets.symmetric(vertical: 7, horizontal: compact ? 0 : 4),
+      alignment: Alignment.centerLeft,
+      shape: const RoundedRectangleBorder(),
+    ),
+    child: Text(label, style: TextStyle(
+      color: ink.withValues(alpha: .94),
+      fontSize: compact ? 49 : 84,
+      fontWeight: FontWeight.w900,
+      height: 1,
+      letterSpacing: compact ? -2 : -3.5,
+    )),
+  );
+
+  Widget _languageSwitch() => Row(mainAxisSize: MainAxisSize.min, children: [
+    _switchChoice('EN', 'en'),
+    const Text('/', style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: 12)),
+    _switchChoice('RU', 'ru'),
+  ]);
+
+  Widget _switchChoice(String label, String language) => TextButton(
+    key: Key('switch-$language'),
+    onPressed: () => _chooseLanguage(language),
+    style: TextButton.styleFrom(
+      foregroundColor: ink,
+      minimumSize: const Size(34, 44),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      shape: const RoundedRectangleBorder(),
+    ),
+    child: Text(label, style: TextStyle(
+      color: ink,
+      fontWeight: _language == language ? FontWeight.w900 : FontWeight.w600,
+      fontSize: 11,
+      decoration: _language == language ? TextDecoration.underline : null,
+      decorationThickness: 2,
+    )),
+  );
+
   Widget _header(bool compact) => Row(children: [
     const Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.public, color: spray, size: 24),
+      Icon(Icons.public, color: ink, size: 24),
       SizedBox(width: 9),
       Text('VISA RUN', style: TextStyle(color: ink, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -1)),
     ]),
     const Spacer(),
     if (!compact) ...[
-      _nav('THE ROUTE'), const SizedBox(width: 34),
-      _nav('OUR STORY'), const SizedBox(width: 34),
+      _nav(_t('route')), const SizedBox(width: 28),
+      _nav(_t('story')), const SizedBox(width: 26),
     ],
+    _languageSwitch(),
+    SizedBox(width: compact ? 8 : 20),
     DecoratedBox(
       decoration: BoxDecoration(border: Border.all(color: ink, width: 1.6)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        child: Text(compact ? 'DEMO' : 'CONCEPT / 001', style: const TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 2)),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+        child: Text(compact ? (_language == 'ru' ? 'ДЕМО' : 'DEMO') : _t('preview'),
+          style: const TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 1)),
       ),
-    )
+    ),
   ]);
 
-  Widget _nav(String text) => Text(text, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1.6, color: ink));
+  Widget _nav(String label) => Text(label,
+    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1.6, color: ink));
 
   Widget _desktopHero() => SizedBox(
     height: 705,
     child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Expanded(flex: 52, child: _copy(false)),
-      Expanded(flex: 48, child: Semantics(label: 'Original black stencil-graffiti silhouette of a traveler with luggage painted onto sunlit concrete',
-        child: const CustomPaint(painter: TravelerPainter()))),
+      Expanded(flex: 48, child: Semantics(label: _t('illustration'),
+        child: CustomPaint(painter: TravelerPainter(mark: _t('mark'))))),
     ]),
   );
 
   Widget _mobileHero() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     _copy(true),
     const SizedBox(height: 12),
-    SizedBox(height: 340, child: Semantics(label: 'Graffiti of a traveler with a suitcase', child: const CustomPaint(painter: TravelerPainter()))),
+    SizedBox(height: 340, child: Semantics(label: _t('illustration'), child: CustomPaint(painter: TravelerPainter(mark: _t('mark'))))),
   ]);
 
   Widget _copy(bool compact) => Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-    Text('NO MORE BORING BORDERS    /    EST. 2026', style: TextStyle(color: ink.withValues(alpha: .67), fontSize: compact ? 9 : 11, letterSpacing: 2.1, fontWeight: FontWeight.w900)),
+    Text(_t('eyebrow'), style: TextStyle(color: ink.withValues(alpha: .67), fontSize: compact ? 9 : 11, letterSpacing: 2.1, fontWeight: FontWeight.w900)),
     const SizedBox(height: 16),
     Text('VISA\nRUN', style: TextStyle(height: .79, color: ink.withValues(alpha: .93), fontSize: compact ? 99 : 146, letterSpacing: compact ? -7 : -11, fontWeight: FontWeight.w900)),
     const SizedBox(height: 21),
@@ -158,29 +267,29 @@ class _VisaLandingState extends State<VisaLanding> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         color: spray.withValues(alpha: .92),
-        child: Text('CROSS BORDERS. NOT FINGERS.', style: TextStyle(color: chalk, fontSize: compact ? 13 : 16, fontWeight: FontWeight.w900, letterSpacing: compact ? .25 : 1.0)),
+        child: Text(_t('headline'), style: TextStyle(color: chalk, fontSize: compact ? 13 : 16, fontWeight: FontWeight.w900, letterSpacing: compact ? .25 : 1.0)),
       ),
     ),
     const SizedBox(height: 28),
     ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 420),
-      child: Text('LESS PAPERWORK.\nMORE OPEN ROAD.', style: TextStyle(color: ink.withValues(alpha: .81), height: 1.26, fontSize: compact ? 18 : 22, fontWeight: FontWeight.w800, letterSpacing: -.35)),
+      child: Text(_t('promise'), style: TextStyle(color: ink.withValues(alpha: .81), height: 1.26, fontSize: compact ? 18 : 22, fontWeight: FontWeight.w800, letterSpacing: -.35)),
     ),
     const SizedBox(height: 11),
     ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 360),
-      child: Text('Your next stamp, minus the drama. Simple border trips. Good people. A little freedom.', style: TextStyle(fontSize: compact ? 14 : 16, height: 1.55, color: ink.withValues(alpha: .68))),
+      child: Text(_t('intro'), style: TextStyle(fontSize: compact ? 14 : 16, height: 1.55, color: ink.withValues(alpha: .68))),
     ),
     const SizedBox(height: 28),
     Wrap(spacing: 11, runSpacing: 12, children: [
-      SprayButton(label: 'BORDER RUNS', filled: true),
-      SprayButton(label: 'HOW IT WORKS', filled: false),
+      SprayButton(label: _t('runs'), filled: true),
+      SprayButton(label: _t('how'), filled: false),
     ]),
     const SizedBox(height: 22),
-    const Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(Icons.circle, size: 8, color: spray), SizedBox(width: 8),
+    Row(mainAxisSize: MainAxisSize.min, children: [
+      const Icon(Icons.circle, size: 8, color: spray), SizedBox(width: 8),
       Flexible(
-        child: Text('DEMO SITE   /   NOTHING TO BOOK YET',
+        child: Text(_t('demo'),
           softWrap: true,
           style: TextStyle(color: ink, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: .6)),
       ),
@@ -190,18 +299,18 @@ class _VisaLandingState extends State<VisaLanding> {
   Widget _footer(bool compact) {
     final left = Row(mainAxisSize: MainAxisSize.min, children: [
       Container(width: 28, height: 2, color: spray), const SizedBox(width: 9),
-      const Flexible(child: Text('THE WORLD IS BIGGER THAN YOUR VISA.', style: TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 1.15))),
+      Flexible(child: Text(_t('quote'), style: TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 1.15))),
     ]);
     return Column(children: [
       Container(height: 1.5, color: ink.withValues(alpha: .4)),
       const SizedBox(height: 16),
       compact ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        left, const SizedBox(height: 17), const SprayButton(label: 'CONTACT US', filled: false),
+        left, const SizedBox(height: 17), SprayButton(label: _t('contact'), filled: false),
       ]) : Row(children: [
         Expanded(child: left),
-        const Text('STAMP. GO. REPEAT.', style: TextStyle(color: ink, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+        Text(_t('closing'), style: TextStyle(color: ink, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
         const SizedBox(width: 44),
-        const SprayButton(label: 'CONTACT US', filled: false),
+        SprayButton(label: _t('contact'), filled: false),
       ]),
     ]);
   }
@@ -480,7 +589,8 @@ class PigmentWearPainter extends CustomPainter {
 }
 
 class TravelerPainter extends CustomPainter {
-  const TravelerPainter();
+  const TravelerPainter({required this.mark});
+  final String mark;
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
@@ -551,7 +661,7 @@ class TravelerPainter extends CustomPainter {
     canvas.drawCircle(const Offset(496, 552), 9, black);
     // Graffiti exclamation and destination marks.
     canvas.save(); canvas.translate(115, 393); canvas.rotate(-.19);
-    final tp = TextPainter(text: const TextSpan(text: 'GO!', style: TextStyle(color: spray, fontSize: 91, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, letterSpacing: -8)), textDirection: TextDirection.ltr)..layout();
+    final tp = TextPainter(text: TextSpan(text: mark, style: TextStyle(color: spray, fontSize: mark == 'GO!' ? 91 : 60, fontWeight: FontWeight.w900, fontStyle: FontStyle.italic, letterSpacing: -5)), textDirection: TextDirection.ltr)..layout();
     tp.paint(canvas, Offset.zero); canvas.restore();
     canvas.drawPath(Path()..moveTo(105, 491)..lineTo(248, 479), Paint()..color = spray..style = PaintingStyle.stroke..strokeWidth = 8..strokeCap = StrokeCap.square);
     for (int i = 0; i < 9; i++) {
@@ -561,5 +671,5 @@ class TravelerPainter extends CustomPainter {
     canvas.restore();
   }
   @override
-  bool shouldRepaint(covariant TravelerPainter oldDelegate) => false;
+  bool shouldRepaint(covariant TravelerPainter oldDelegate) => mark != oldDelegate.mark;
 }
