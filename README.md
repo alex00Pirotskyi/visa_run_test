@@ -4,11 +4,11 @@ Original art-directed Flutter Web landing page. Purpose: **visual-only prototype
 
 ## Visual language
 
-- Procedural **GPU fragment shader** renders a multiscale concrete surface with mineral noise, pores, faint streaks and a soft vignette. The app provides a solid-color fallback if shader initialization fails.
+- A **static GPU fragment shader** draws a quiet, gently porous concrete wall, with no vignette, strong mottling, or animation. The app provides a solid-colour fallback if shader initialization fails.
 - A custom Flutter painter draws an original anonymous traveler, a spray-paint sun, motion marks and paint spatters. No third-party images or Banksy artworks are used.
-- Black editorial stencil-like display, limited distressed red accent, hand-painted framed controls, editorial responsive composition.
+- Black editorial stencil-like display, slightly translucent ink, limited distressed red, flat painted controls, editorial responsive composition.
 - Buttons have pointer hover, keyboard focus and tap visual feedback, but intentionally **do nothing**.
-- Static background shader: it does not redraw continuously or waste GPU cycles. No external fonts or packages.
+- **The wall scrolls with the typography and painted art**, so there is no fixed background/parallax separation. Pigment flecks sit above the ink and move with it. The wall has a separate repaint boundary and no animation frames. No external fonts or packages.
 
 ## Development
 

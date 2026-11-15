@@ -1,7 +1,8 @@
 #include <flutter/runtime_effect.glsl>
 
+// One-time, low-contrast poured concrete. No animation, vignetting or
+// high-frequency moving detail. The shader is painted in scrolling wall space.
 uniform vec2 uSize;
-uniform float uTime;
 out vec4 fragColor;
 
 float hash21(vec2 p) {
@@ -9,23 +10,32 @@ float hash21(vec2 p) {
   p += dot(p, p + 45.32);
   return fract(p.x * p.y);
 }
+
 float noise(vec2 p) {
-  vec2 i = floor(p), f = fract(p);
+  vec2 i = floor(p);
+  vec2 f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash21(i), hash21(i + vec2(1.,0.)),f.x),
-             mix(hash21(i + vec2(0.,1.)),hash21(i + vec2(1.,1.)),f.x),f.y);
+  return mix(
+    mix(hash21(i), hash21(i + vec2(1., 0.)), f.x),
+    mix(hash21(i + vec2(0., 1.)), hash21(i + vec2(1., 1.)), f.x),
+    f.y
+  );
 }
+
 void main() {
   vec2 p = FlutterFragCoord().xy;
-  vec2 uv = p / max(uSize, vec2(1.));
-  float coarse = noise(p * .0045);
-  float medium = noise(p * .027);
-  float grain = noise(p * .31);
-  float pores = smoothstep(.79, .95, noise(p * .17));
-  float veins = smoothstep(.43, .55, noise(vec2(p.x * .009, p.y * .002) + medium * .43));
-  float edge = length((uv - .5) * vec2(1.12, .92));
-  float light = .71 + .13 * coarse + .07 * medium + .038 * grain
-      - .075 * pores - .023 * veins - .14 * smoothstep(.22, .85, edge);
-  vec3 concrete = vec3(light * .99, light * .985, light * .956);
+  float mineral = noise(p * .006);
+  float fine = noise(p * .14);
+  float pores = smoothstep(.84, .95, noise(p * .24));
+  float softShade = noise(p * .0018);
+
+  // Roughly 90% flatter than the earlier mottled texture. Ink is allowed to
+  // show the mineral surface through semi-transparent painted colours.
+  float value = .725
+    + (mineral - .5) * .041
+    + (fine - .5) * .024
+    + (softShade - .5) * .026
+    - pores * .014;
+  vec3 concrete = vec3(value * 1.012, value, value * .964);
   fragColor = vec4(concrete, 1.);
 }

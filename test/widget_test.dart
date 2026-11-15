@@ -10,9 +10,31 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const VisaRunApp());
     await tester.pumpAndSettle();
+
     expect(find.text('VISA RUN'), findsWidgets);
     expect(find.text('BORDER RUNS'), findsOneWidget);
     expect(find.text('HOW IT WORKS'), findsOneWidget);
     expect(find.text('CONTACT US'), findsOneWidget);
+    expect(find.byKey(const Key('concrete-wall')), findsOneWidget);
+  });
+
+  testWidgets('the concrete moves with the scrolled graffiti content', (tester) async {
+    tester.view.physicalSize = const Size(390, 650);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const VisaRunApp());
+    await tester.pumpAndSettle();
+
+    final wall = find.byKey(const Key('concrete-wall'));
+    expect(
+      find.ancestor(of: wall, matching: find.byType(SingleChildScrollView)),
+      findsOneWidget,
+    );
+
+    final startY = tester.getTopLeft(wall).dy;
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -220));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(wall).dy, lessThan(startY));
   });
 }

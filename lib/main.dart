@@ -56,13 +56,28 @@ class _VisaLandingState extends State<VisaLanding> {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
         final compact = w < 760;
-        return Stack(children: [
-          Positioned.fill(child: CustomPaint(painter: ConcretePainter(shader))),
-          Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: WallMarksPainter()))),
-          SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: h),
-              child: Center(
+        // One scrolling wall: its pigment, grain and all content share the
+        // exact same transform. Nothing is pinned to the viewport.
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: h),
+            child: Stack(children: [
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    key: const Key('concrete-wall'),
+                    painter: ConcretePainter(shader),
+                  ),
+                ),
+              ),
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: RepaintBoundary(
+                    child: CustomPaint(painter: WallMarksPainter()),
+                  ),
+                ),
+              ),
+              Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1470),
                   child: Padding(
@@ -77,9 +92,18 @@ class _VisaLandingState extends State<VisaLanding> {
                   ),
                 ),
               ),
-            ),
+              // Faint concrete-coloured flecks also cross over the ink.
+              // This is a static painter, not a frame-by-frame animation.
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: RepaintBoundary(
+                    child: CustomPaint(painter: PigmentWearPainter()),
+                  ),
+                ),
+              ),
+            ]),
           ),
-        ]);
+        );
       }),
     );
   }
@@ -124,12 +148,12 @@ class _VisaLandingState extends State<VisaLanding> {
   Widget _copy(bool compact) => Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
     Text('NO MORE BORING BORDERS    /    EST. 2026', style: TextStyle(color: ink.withValues(alpha: .67), fontSize: compact ? 9 : 11, letterSpacing: 2.1, fontWeight: FontWeight.w900)),
     const SizedBox(height: 16),
-    Text('VISA\nRUN', style: TextStyle(height: .79, color: ink, fontSize: compact ? 99 : 146, letterSpacing: compact ? -7 : -11, fontWeight: FontWeight.w900)),
+    Text('VISA\nRUN', style: TextStyle(height: .79, color: ink.withValues(alpha: .93), fontSize: compact ? 99 : 146, letterSpacing: compact ? -7 : -11, fontWeight: FontWeight.w900)),
     const SizedBox(height: 21),
     Transform.rotate(angle: -.034, alignment: Alignment.centerLeft,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        color: spray,
+        color: spray.withValues(alpha: .92),
         child: Text('CROSS BORDERS. NOT FINGERS.', style: TextStyle(color: chalk, fontSize: compact ? 13 : 16, fontWeight: FontWeight.w900, letterSpacing: compact ? .25 : 1.0)),
       ),
     ),
@@ -197,12 +221,16 @@ class _SprayButtonState extends State<SprayButton> {
       onTap: () => HapticFeedback.selectionClick(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 125),
-        transform: Matrix4.translationValues(0, pressed ? 2 : hovered ? -2 : 0, 0),
         padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 16),
         decoration: BoxDecoration(
-          color: widget.filled ? (hovered ? ink : spray) : (hovered ? ink : Colors.transparent),
-          border: Border.all(width: 2.3, color: ink),
-          boxShadow: hovered ? [const BoxShadow(color: ink, offset: Offset(3, 4), blurRadius: 0)] : null,
+          // Flat translucent paint: no floating UI or drop shadows.
+          color: widget.filled
+              ? (hovered ? ink.withValues(alpha: .91) : spray.withValues(alpha: .89))
+              : (hovered ? ink.withValues(alpha: .87) : Colors.transparent),
+          border: Border.all(
+            width: pressed ? 2.7 : 2.1,
+            color: ink.withValues(alpha: .9),
+          ),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Text(widget.label, style: TextStyle(color: hovered || widget.filled ? chalk : ink, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.25)),
@@ -223,7 +251,6 @@ class ConcretePainter extends CustomPainter {
     if (shader == null) return;
     shader!.setFloat(0, size.width);
     shader!.setFloat(1, size.height);
-    shader!.setFloat(2, 0);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
   @override
@@ -236,10 +263,10 @@ class WallMarksPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final r = math.Random(311);
     final p = Paint()..style = PaintingStyle.fill;
-    for (var i = 0; i < 150; i++) {
+    for (var i = 0; i < 90; i++) {
       final x = r.nextDouble() * size.width;
       final y = r.nextDouble() * size.height;
-      p.color = ink.withValues(alpha: .018 + r.nextDouble() * .045);
+      p.color = ink.withValues(alpha: .014 + r.nextDouble() * .025);
       canvas.drawCircle(Offset(x, y), .4 + r.nextDouble() * 1.6, p);
     }
     p.color = ink.withValues(alpha: .08);
@@ -251,6 +278,31 @@ class WallMarksPainter extends CustomPainter {
   bool shouldRepaint(covariant WallMarksPainter oldDelegate) => false;
 }
 
+
+/// Minuscule chips reveal the wall's warm base colour through painted ink.
+/// Deterministic and deliberately sparse; scrolled/cached with the wall.
+class PigmentWearPainter extends CustomPainter {
+  const PigmentWearPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(709);
+    final fleck = Paint()..color = const Color(0x35b9b7ad);
+    for (var i = 0; i < 440; i++) {
+      final x = random.nextDouble() * size.width;
+      final y = random.nextDouble() * size.height;
+      canvas.drawCircle(
+        Offset(x, y),
+        .3 + random.nextDouble() * .9,
+        fleck,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant PigmentWearPainter oldDelegate) => false;
+}
+
 class TravelerPainter extends CustomPainter {
   const TravelerPainter();
   @override
@@ -260,7 +312,6 @@ class TravelerPainter extends CustomPainter {
     canvas.translate((size.width - 570 * scale) / 2, (size.height - 640 * scale) / 2);
     canvas.scale(scale);
     final black = Paint()..color = ink..style = PaintingStyle.fill;
-    final red = Paint()..color = spray..style = PaintingStyle.fill;
 
     // Loose spray halo, painted as layered broken arcs rather than a perfect circle.
     for (int i = 0; i < 6; i++) {
