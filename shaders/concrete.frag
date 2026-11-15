@@ -1,7 +1,7 @@
 #include <flutter/runtime_effect.glsl>
 
-// Cool grey concrete microstructure beneath the static architectural
-// sunlight painter. No time uniform; the shader is never animated.
+// Fine, static cast-concrete grain: mineral inclusions, pores, and shallow
+// clouds. No time uniforms or repaint loop.
 out vec4 fragColor;
 
 float hash21(vec2 p) {
@@ -23,15 +23,17 @@ float noise(vec2 p) {
 
 void main() {
   vec2 p = FlutterFragCoord().xy;
-  float big = noise(p * .003);
-  float fine = noise(p * .026);
-  float tiny = noise(p * .20);
-  float pores = smoothstep(.86, .97, noise(p * .17));
-  float v = .733
-    + (big - .5) * .055
-    + (fine - .5) * .045
-    + (tiny - .5) * .023
-    - pores * .019;
-  vec3 grey = vec3(v * .995, v * 1.002, v * 1.004);
-  fragColor = vec4(grey, 1.);
+  float cloud = noise(p * .0028);
+  float grain = noise(p * .038);
+  float sand = noise(p * .32);
+  float tiny = hash21(floor(p * .94));
+  float pits = smoothstep(.87, .975, noise(p * .17));
+  float tone = .736
+    + (cloud - .5) * .103
+    + (grain - .5) * .081
+    + (sand - .5) * .032
+    + (tiny - .5) * .017
+    - .025 * pits;
+  vec3 concrete = vec3(tone * .994, tone * 1.002, tone * 1.007);
+  fragColor = vec4(concrete, 1.);
 }

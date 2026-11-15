@@ -1,48 +1,44 @@
-# VISA RUN — Concrete / stencil demo
+# VISA RUN — Painted-on-concrete Flutter prototype
 
-Original art-directed Flutter Web landing page. Purpose: **visual-only prototype** for a visa-run company. It does not process bookings, applications, payments, travel documents, or personal information.
+An original black-stencil graffiti website concept for visa runs, built entirely in **Flutter Web**. This is a **design-only demo**: there are no working bookings, messages, application forms, or real visa services.
 
-## Visual language
+## Visual direction
 
-- A **static GPU fragment shader** draws a cool-grey, fine-grained concrete base; a lightweight Canvas painter adds large prefabricated panels, recessed seams, form-tie holes, architectural diagonal daylight, and a floor with dramatic window shadows inspired by the user's reference photograph. Shader fallback leaves the static architecture visible.
-- A custom Flutter painter draws an original anonymous traveler, a spray-paint sun, motion marks and paint spatters. No third-party images or Banksy artworks are used.
-- **Strictly monochrome, black-only** stencil artwork and typography, softly weathered with concrete-coloured flecks. No red accent remains. Flat painted controls and responsive editorial layout.
-- Buttons have pointer hover, keyboard focus and tap visual feedback, but intentionally **do nothing**.
-- **The full architectural scene (sunlight, panels, floor) scrolls with the typography and black stencil artwork.** There is no viewport-anchored parallax, timer, moving sunlight, expensive blur, or background animation. The painters are wrapped in repaint boundaries. No external fonts or packages.
+The web UI is a mural painted onto a believable architectural concrete wall, not floating cards over a texture.
 
-## Language preferences
+- **`shaders/concrete.frag`** — static low-frequency mineral clouding, concrete pores, grain and aggregate. No time uniform or animation loop
+- **`lib/concrete_wall.dart`** — panel seams, form-tie holes, directional diagonal sunlight and hard-edged window shadows on a concrete floor; one stable `CustomPainter` pass
+- **`lib/stencil_mural.dart`** — original vector stencil artwork featuring a walking backpacker, rolling suitcase, airport sign, plane and border-control icon
+- **`lib/graffiti_widgets.dart`** — reusable weathered `StencilText`, `GraffitiButton`, `GraffitiTextField`; chipped ink, spray and drip details, all drawn by Flutter
+- **`lib/main.dart`** — responsive composition; real text field can accept demo text but never transmits it. Stencil-themed language switch
+- **`lib/visa_i18n.dart`** — English and Russian UI copy
 
-- New visitors see **only ENGLISH / РУССКИЙ stencil text** on the concrete wall. No hero, navigation or booking buttons appear until a language has been chosen.
-- The language changes immediately and is saved locally with Flutter Web `shared_preferences` under `visa_run_language`. Returning visitors load directly into the saved language.
-- A subtle **EN / RU** switch remains painted into the header, with the active choice underlined. All public copy and the traveler stencil's graffiti word are translated; the VISA RUN brand stays unchanged.
-- If the browser blocks local storage, the chosen language still works for the current tab.
-- There is no new backend, API or tracking.
+**Lightweight by design:** no full-screen raster backgrounds, external font downloads, canvas animation, parallax, third-party image requests, or UI animation timers. The shader and paint layers are static and wrapped in repaint boundaries, scrolling as a single wall.
 
-## Development
+The design was informed by the user's approved black stencil travel-mural mockup; no existing Banksy artwork is reproduced.
 
-Use Flutter 3.47.2+.
+## Languages
 
-```sh
+First visit displays **only** ENGLISH and РУССКИЙ on the wall. Once selected, the complete mural appears in the selected language; Flutter Web `shared_preferences` stores the code locally under `visa_run_language`. Returning visitors skip the picker. The `EN / RU` control allows switching later. Without browser storage, the session is still usable.
+
+## Develop and test
+
+Flutter 3.47.2 or newer:
+
+```bash
 flutter pub get
-flutter run -d chrome
 flutter analyze
 flutter test
 flutter build web --release
+flutter run -d chrome
 ```
 
-## Cloudflare Workers
+The CI tests exercise first-visit language choice, both languages, persistence, responsive layouts, wall scrolling, and editing a demo field.
 
-This is a completely separate deployment from `evil-space`. Worker name: `visa-run-test`. Target HTTPS custom domain: **https://visa-run-test.evils.space**. The underscore version is not valid for a public HTTPS hostname.
+## Cloudflare deployment
 
-The Worker uses static assets directly from `build/web`; there is **no database**, API, secret, or paid resource. It is intended to run on a Cloudflare Workers free account within its free usage limits.
+The project is separate from Evil Space: standalone Worker `visa-run-test`, target URL **https://visa-run-test.evils.space**. Its Worker assets are the Flutter release build, no D1 or API required. A deployment job triggers on `main`.
 
-Set the following GitHub Actions secrets **on this repository** (never commit their values): `CLOUDFLARE_API_TOKEN` (Workers Scripts Edit, appropriate zone rights) and `CLOUDFLARE_ACCOUNT_ID`. Enable Actions, then run **Deploy demo to Cloudflare** or push to `main`. Wrangler's `custom_domain = true` requests Cloudflare to associate the domain on deploy. The `evils.space` DNS zone must already be in the same Cloudflare account; conflicts or missing token permissions require a manual dashboard fix.
+To publish, add repository Actions secrets **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`**, scoped for the correct Cloudflare account and domain, and rerun **Deploy demo to Cloudflare**. The GitHub build may pass before the site is actually deployed.
 
-For local deployment with authenticated Wrangler:
-
-```sh
-flutter build web --release
-npx wrangler@4 deploy
-```
-
-**Important:** The GitHub source is committed but deployment isn't complete until the workflow succeeds with credentials and the hostname resolves. Do not modify the `evil-space` Worker or its routes.
+Do not modify or reuse the existing production `evil-space` Worker.
