@@ -35,7 +35,9 @@ class _GlassCalendarState extends State<GlassBookingCalendar> {
     final date = DateTime(month.year, month.month + offset);
     final now = DateTime.now();
     if (date.isBefore(DateTime(now.year, now.month)) ||
-        date.isAfter(DateTime(now.year, now.month + 12))) return;
+        date.isAfter(DateTime(now.year, now.month + 12))) {
+      return;
+    }
     setState(() {
       month = date;
       if (selected != null &&
@@ -119,7 +121,7 @@ class _GlassCalendarState extends State<GlassBookingCalendar> {
     final chosen = selected != null && d.year == selected!.year &&
         d.month == selected!.month && d.day == selected!.day;
     return Semantics(
-      label: '$day '+labelFor(d),selected: chosen,button: true,enabled: available,
+      label: '$day ${labelFor(d)}',selected: chosen,button: true,enabled: available,
       child: InkWell(
         key: Key('calendar-day-$day'),onTap: available ? () =>
             setState(() => selected = d) : null,
