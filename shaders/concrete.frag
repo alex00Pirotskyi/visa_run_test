@@ -1,7 +1,8 @@
 #include <flutter/runtime_effect.glsl>
 
-// Static architectural concrete. One GPU draw, zero time-dependent uniforms.
-// Subtle aggregate, pores and mineral variation; no animated noise.
+// Static cast-concrete mineral grain. Two smooth octaves and one shared
+// grain/pore sample: 9 hash evaluations per fragment, down from 17.
+// No time, no animated effects, no extra full-screen pass.
 out vec4 fragColor;
 
 float hash21(vec2 p) {
@@ -24,15 +25,13 @@ float noise(vec2 p) {
 void main() {
   vec2 p = FlutterFragCoord().xy;
   float cloud = noise(p * .004);
-  float mineral = noise(p * .028);
-  float fine = noise(p * .18);
-  float granular = hash21(floor(p * .97));
-  float pores = smoothstep(.85, .98, noise(p * .21));
+  float mineral = noise(p * .029);
+  float grain = hash21(floor(p * .95));
+  float pores = smoothstep(.965, .996, grain);
   float value = .741
-      + (cloud - .5) * .08
-      + (mineral - .5) * .06
-      + (fine - .5) * .024
-      + (granular - .5) * .017
-      - pores * .026;
+      + (cloud - .5) * .081
+      + (mineral - .5) * .063
+      + (grain - .5) * .026
+      - pores * .033;
   fragColor = vec4(vec3(value * 1.012, value, value * .984), 1.);
 }

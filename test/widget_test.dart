@@ -189,6 +189,32 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('contact glass shares blur without touching calendar',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
+    await openApp(tester, width: 1440, height: 900);
+    final first = find.byKey(const Key('contact-whatsapp'));
+    final second = find.byKey(const Key('contact-telegram'));
+    expect(find.ancestor(of: first, matching: find.byType(BackdropGroup)),
+        findsOneWidget);
+    expect(find.ancestor(of: second, matching: find.byType(BackdropGroup)),
+        findsOneWidget);
+
+    final firstGlass = tester.widget<LiquidGlass>(find.descendant(
+      of: first, matching: find.byType(LiquidGlass)));
+    final secondGlass = tester.widget<LiquidGlass>(find.descendant(
+      of: second, matching: find.byType(LiquidGlass)));
+    final calendarGlass = tester.widget<LiquidGlass>(find.descendant(
+      of: find.byKey(const Key('booking-calendar')),
+      matching: find.byType(LiquidGlass)));
+    expect(firstGlass.groupedBackdrop, isTrue);
+    expect(secondGlass.groupedBackdrop, isTrue);
+    expect(calendarGlass.groupedBackdrop, isFalse);
+    expect(firstGlass.blur, secondGlass.blur);
+    expect(calendarGlass.strongTopAlpha, closeTo(.78, .001));
+    expect(calendarGlass.strongBottomAlpha, closeTo(.69, .001));
+  });
+
   testWidgets('mobile concrete, calendar and bus share scroll coordinates',
       (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});

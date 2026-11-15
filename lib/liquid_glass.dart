@@ -14,6 +14,7 @@ class LiquidGlass extends StatelessWidget {
     this.tintOpacity = 1,
     this.strongTopAlpha,
     this.strongBottomAlpha,
+    this.groupedBackdrop = false,
   });
 
   final Widget child;
@@ -30,6 +31,10 @@ class LiquidGlass extends StatelessWidget {
   /// glass controls unchanged. Both values are opacity in the 0–1 range.
   final double? strongTopAlpha;
   final double? strongBottomAlpha;
+
+  /// Only non-overlapping controls in a BackdropGroup should enable this.
+  /// They share one backdrop capture/filter rather than duplicating work.
+  final bool groupedBackdrop;
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +58,15 @@ class LiquidGlass extends StatelessWidget {
             Positioned.fill(
               child: noBlur || blur == 0
                   ? const SizedBox.expand()
-                  : BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-                      child: const SizedBox.expand(),
-                    ),
+                  : groupedBackdrop
+                      ? BackdropFilter.grouped(
+                          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                          child: const SizedBox.expand(),
+                        )
+                      : BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                          child: const SizedBox.expand(),
+                        ),
             ),
             Positioned.fill(
               child: DecoratedBox(
@@ -144,6 +154,7 @@ class GlassAction extends StatefulWidget {
     this.compact = false,
     this.emphasis = false,
     this.blur = 7,
+    this.groupedBackdrop = false,
   });
 
   final String label;
@@ -152,6 +163,7 @@ class GlassAction extends StatefulWidget {
   final bool compact;
   final bool emphasis;
   final double blur;
+  final bool groupedBackdrop;
 
   @override
   State<GlassAction> createState() => _GlassActionState();
@@ -171,6 +183,7 @@ class _GlassActionState extends State<GlassAction> {
       child: LiquidGlass(
         radius: radius,
         blur: widget.blur,
+        groupedBackdrop: widget.groupedBackdrop,
         strong: widget.emphasis,
         child: Material(
           color: Colors.transparent,

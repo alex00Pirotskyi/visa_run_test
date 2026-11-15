@@ -20,3 +20,16 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build web --release
+      - name: Report release-bundle size
+        run: |
+          du -sh build/web
+          find build/web -type f -printf '%s %p\n' | sort -nr | sed -n '1,12p'
+      - name: Publish verified web artifact for deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visa-run-web
+          path: build/web/
+          retention-days: 3
+          compression-level: 1
+          if-no-files-found: error

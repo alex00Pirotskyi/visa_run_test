@@ -17,7 +17,7 @@ The first visit displays only ENGLISH and РУССКИЙ on the concrete. A choi
 
 The date picker supports current/future dates through 12 months ahead and is **not connected to availability, booking, payment, or message delivery**. WhatsApp and Telegram controls show honest not-configured notices until the business's real links are provided.
 
-No continuous animation, heavy wallpaper bitmap, or full-screen blur. The vector is an original trace of the user-provided bus illustration, avoiding recognizable third-party graffiti art.
+No continuous animation, heavy wallpaper bitmap, or full-screen blur. The concrete fragment shader was reduced from 17 to 9 hash calculations per pixel (two low-frequency octaves plus a shared grain/pore sample). The non-overlapping WhatsApp/Telegram capsules share an efficient backdrop capture; the glass calendar remains independently blurred so the bus graffiti still appears through it. Redundant old graffiti controls and their code have been removed. The vector is an original trace of the user-provided bus illustration, avoiding recognizable third-party graffiti art.
 
 ## Run
 
@@ -33,4 +33,4 @@ flutter run -d chrome
 
 ## Deployment
 
-The separate Cloudflare Worker is `visa-run-test` with target **`visa-run-test.evils.space`**; the existing production Evil Space Worker is not altered. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in this repository's GitHub Actions secrets and run the deploy workflow. Successful Flutter builds do not automatically mean the site was published.
+The separate Cloudflare Worker is `visa-run-test` with target **`visa-run-test.evils.space`**; the existing production Evil Space Worker is not altered. The CI workflow builds/tests once on each push to main, reports bundle size and uploads the release output. On a successful main push, the deployment workflow reuses that exact verified output without recompiling. Manual deployments still build locally within the manual job. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in this repository's GitHub Actions secrets before deployment; successful Flutter checks do not automatically mean the site was published.

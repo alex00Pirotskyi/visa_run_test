@@ -241,16 +241,22 @@ class _VisaLandingState extends State<VisaLanding> {
     icon: icon,
     compact: true,
     blur: mobile ? 3 : 6,
+    groupedBackdrop: true,
     onPressed: () => _contact(label),
   );
 
-  Widget _socialActions({required bool mobile}) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _socialButton('WhatsApp', Icons.chat_bubble_outline, mobile: mobile),
-      SizedBox(width: mobile ? 8 : 15),
-      _socialButton('Telegram', Icons.send_outlined, mobile: mobile),
-    ],
+  Widget _socialActions({required bool mobile}) => BackdropGroup(
+    // These capsules never overlap and use the same sigma at each
+    // breakpoint. The calendar stays OUTSIDE this group to preserve the
+    // bus painted behind its glass.
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _socialButton('WhatsApp', Icons.chat_bubble_outline, mobile: mobile),
+        SizedBox(width: mobile ? 8 : 15),
+        _socialButton('Telegram', Icons.send_outlined, mobile: mobile),
+      ],
+    ),
   );
 
   Widget _graffitiTitle(double size) => RepaintBoundary(
