@@ -229,15 +229,17 @@ class _VisaLandingState extends State<VisaLanding> {
       _nav(_t('story')), const SizedBox(width: 26),
     ],
     _languageSwitch(),
-    SizedBox(width: compact ? 8 : 20),
-    DecoratedBox(
-      decoration: BoxDecoration(border: Border.all(color: ink, width: 1.6)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-        child: Text(compact ? (_language == 'ru' ? 'ДЕМО' : 'DEMO') : _t('preview'),
-          style: const TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 1)),
+    if (!compact) ...[
+      const SizedBox(width: 20),
+      DecoratedBox(
+        decoration: BoxDecoration(border: Border.all(color: ink, width: 1.6)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          child: Text(_t('preview'),
+            style: const TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 1)),
+        ),
       ),
-    ),
+    ],
   ]);
 
   Widget _nav(String label) => Text(label,
