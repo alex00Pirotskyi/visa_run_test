@@ -75,7 +75,7 @@ class _VisaLandingState extends State<VisaLanding> {
                 child: IgnorePointer(
                   child: RepaintBoundary(
                     child: CustomPaint(
-                      key: const Key('architectural-concrete-light'),
+                      key: Key('architectural-concrete-light'),
                       painter: WallMarksPainter(),
                     ),
                   ),
@@ -500,7 +500,7 @@ class TravelerPainter extends CustomPainter {
         Paint()
           ..color = ink.withValues(alpha: .24 - i * .035)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 11 - i,
+          ..strokeWidth = 11.0 - i,
       );
     }
     canvas.drawCircle(
