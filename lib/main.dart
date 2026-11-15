@@ -99,8 +99,11 @@ class _VisaLandingState extends State<VisaLanding> {
           : 'Select a travel date first.');
       return;
     }
-    final chosen = date.day.toString().padLeft(2, '0') + '/' +
-        date.month.toString().padLeft(2, '0') + '/' + date.year.toString();
+    final chosen = [
+      date.day.toString().padLeft(2, '0'),
+      date.month.toString().padLeft(2, '0'),
+      date.year.toString(),
+    ].join('/');
     _notice(_ru
         ? 'Дата $chosen выбрана. Это демо — бронирование не подключено.'
         : '$chosen selected. Demo only — booking is not connected.');
