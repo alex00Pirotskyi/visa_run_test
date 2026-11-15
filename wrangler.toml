@@ -1,0 +1,10 @@
+name = "visa-run-test"
+compatibility_date = "2026-11-01"
+
+[assets]
+directory = "./build/web"
+not_found_handling = "single-page-application"
+
+[[routes]]
+pattern = "visa-run-test.evils.space"
+custom_domain = true
