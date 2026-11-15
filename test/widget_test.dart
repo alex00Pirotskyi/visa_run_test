@@ -1,8 +1,11 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:visa_run_test/bus_mural.dart';
+import 'package:visa_run_test/concrete_scene.dart';
 import 'package:visa_run_test/glass_calendar.dart';
 import 'package:visa_run_test/liquid_glass.dart';
 import 'package:visa_run_test/main.dart';
@@ -22,6 +25,35 @@ void main() {
     await tester.pumpWidget(const VisaRunApp());
     await tester.pumpAndSettle();
   }
+
+  testWidgets('matte concrete covers the full height with only faint seams',
+      (tester) async {
+    const width = 320;
+    const height = 800;
+    final recorder = ui.PictureRecorder();
+    const painter = ConcreteScenePainter(null);
+    painter.paint(ui.Canvas(recorder), const Size(320, 800));
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(width, height);
+    final raw = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    expect(raw, isNotNull);
+    final pixels = raw!.buffer.asUint8List();
+    int redAt(int x, int y) => pixels[(y * width + x) * 4];
+
+    // It is the same pale surface all the way down, with no dark floor.
+    expect((redAt(18, 12) - redAt(18, 780)).abs(), lessThan(14));
+
+    // Delicate formwork joints remain visible, but don't dominate.
+    final seamX = (width * ConcreteScenePainter.verticalSeamFraction).round();
+    final seamY = (height * ConcreteScenePainter.horizontalSeamFraction).round();
+    expect(redAt(seamX, 120), lessThan(redAt(seamX - 5, 120)));
+    expect(redAt(40, seamY), lessThan(redAt(40, seamY - 5)));
+    expect(redAt(seamX - 5, 120) - redAt(seamX, 120), lessThan(18));
+    expect(redAt(40, seamY - 5) - redAt(40, seamY), lessThan(18));
+
+    image.dispose();
+    picture.dispose();
+  });
 
   testWidgets('first visitor sees only language choice on concrete',
       (tester) async {

@@ -22,7 +22,7 @@ class VisaRunApp extends StatelessWidget {
     theme: ThemeData(
       useMaterial3: true,
       fontFamily: 'Roboto',
-      scaffoldBackgroundColor: const Color(0xffbdbbb7),
+      scaffoldBackgroundColor: ConcreteScenePainter.baseColor,
       colorScheme: ColorScheme.fromSeed(seedColor: graffitiInk),
     ),
     home: const VisaLanding(),
@@ -59,7 +59,7 @@ class _VisaLandingState extends State<VisaLanding> {
           await ui.FragmentProgram.fromAsset('shaders/concrete.frag');
       if (mounted) setState(() => _concreteShader = program.fragmentShader());
     } catch (_) {
-      // The custom-painter fallback still draws the wall and daylight.
+      // A warm matte concrete wall with two faint seams remains visible.
     }
   }
 

@@ -1,8 +1,8 @@
 #include <flutter/runtime_effect.glsl>
 
-// Static cast-concrete mineral grain. Two smooth octaves and one shared
-// grain/pore sample: 9 hash evaluations per fragment, down from 17.
-// No time, no animated effects, no extra full-screen pass.
+// "Kindle concrete": matte warm-gray wall, not a cinematic architectural
+// scene. One smooth mineral octave + subtle pixel grain, with rare pores.
+// Five hash evaluations per pixel (previously nine), and NO time uniforms.
 out vec4 fragColor;
 
 float hash21(vec2 p) {
@@ -24,14 +24,14 @@ float noise(vec2 p) {
 
 void main() {
   vec2 p = FlutterFragCoord().xy;
-  float cloud = noise(p * .004);
-  float mineral = noise(p * .029);
-  float grain = hash21(floor(p * .95));
-  float pores = smoothstep(.965, .996, grain);
-  float value = .741
-      + (cloud - .5) * .081
-      + (mineral - .5) * .063
-      + (grain - .5) * .026
-      - pores * .033;
-  fragColor = vec4(vec3(value * 1.012, value, value * .984), 1.);
+  float mineral = noise(p * .005);
+  float grain = hash21(floor(p * .92));
+  float pore = step(.992, grain);
+
+  float tone = .783
+      + (mineral - .5) * .025
+      + (grain - .5) * .018
+      - pore * .012;
+  vec3 concrete = vec3(tone * 1.011, tone * .997, tone * .982);
+  fragColor = vec4(concrete, 1.);
 }
