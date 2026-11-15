@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:visa_run_test/balloon_mural.dart';
 import 'package:visa_run_test/graffiti_calendar.dart';
 import 'package:visa_run_test/graffiti_widgets.dart';
 import 'package:visa_run_test/main.dart';
+import 'package:visa_run_test/transparent_stencil_button.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -22,24 +23,32 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('first visit shows only language selection on the wall',
+  testWidgets('static image asset is bundled as the actual wall background',
+      (tester) async {
+    await render(tester);
+    final data = await rootBundle.load('assets/images/banksy_wall.webp');
+    expect(data.lengthInBytes, greaterThan(2000));
+    expect(data.lengthInBytes, lessThan(100000));
+    expect(find.byKey(const Key('concrete-wall-image')), findsOneWidget);
+  });
+
+  testWidgets('first visit shows only two language options on image',
       (tester) async {
     await render(tester);
     expect(find.text('ENGLISH'), findsOneWidget);
     expect(find.text('РУССКИЙ'), findsOneWidget);
     expect(find.byType(GraffitiBookingCalendar), findsNothing);
     expect(find.byKey(const Key('contact-whatsapp')), findsNothing);
-    expect(find.byKey(const Key('concrete-wall')), findsOneWidget);
-    expect(find.byKey(const Key('concrete-surface-detail')), findsOneWidget);
+    expect(find.byType(GraffitiTextField), findsNothing);
   });
 
-  testWidgets('English selection shows minimalist calendar and balloon mural',
+  testWidgets('English opens a transparent calendar and contact buttons',
       (tester) async {
     await render(tester);
     await tester.tap(find.byKey(const Key('choose-en')));
     await tester.pumpAndSettle();
     expect(find.byType(GraffitiBookingCalendar), findsOneWidget);
-    expect(find.byKey(const Key('balloon-girl-art')), findsOneWidget);
+    expect(find.byType(TransparentStencilButton), findsNWidgets(3));
     expect(find.byKey(const Key('contact-whatsapp')), findsOneWidget);
     expect(find.byKey(const Key('contact-telegram')), findsOneWidget);
     expect(find.text('PICK YOUR RUN DATE'), findsOneWidget);
@@ -48,8 +57,7 @@ void main() {
     expect(prefs.getString('visa_run_language'), 'en');
   });
 
-  testWidgets('calendar can select a future day and demo booking gives feedback',
-      (tester) async {
+  testWidgets('selecting a date shows honest demo feedback', (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
     await render(tester);
     await tester.tap(find.byKey(const Key('calendar-next-month')));
@@ -61,10 +69,9 @@ void main() {
     expect(find.textContaining('booking is not connected'), findsOneWidget);
   });
 
-  testWidgets('Russian preference loads directly and switches back to English',
-      (tester) async {
+  testWidgets('Russian locale saved and switchable on mobile', (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'ru'});
-    await render(tester, width: 390, height: 780);
+    await render(tester, width: 390, height: 700);
     expect(find.text('РУССКИЙ'), findsNothing);
     expect(find.text('ВЫБЕРИ ДАТУ ПОЕЗДКИ'), findsOneWidget);
     await tester.tap(find.byKey(const Key('switch-en')));
@@ -74,8 +81,7 @@ void main() {
     expect(prefs.getString('visa_run_language'), 'en');
   });
 
-  testWidgets('a chosen language survives reopening the site',
-      (tester) async {
+  testWidgets('selection survives recreating the Flutter app', (tester) async {
     await render(tester);
     await tester.tap(find.byKey(const Key('choose-ru')));
     await tester.pumpAndSettle();
@@ -86,32 +92,30 @@ void main() {
     expect(find.text('ENGLISH'), findsNothing);
   });
 
-  testWidgets('contacts do not imply a working service', (tester) async {
+  testWidgets('contact buttons are transparent demo controls', (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
     await render(tester);
-    await tester.tap(find.byKey(const Key('contact-telegram')));
+    final telegram = find.byKey(const Key('contact-telegram'));
+    expect(telegram, findsOneWidget);
+    await tester.tap(telegram);
     await tester.pump();
     expect(find.textContaining('not configured yet'), findsOneWidget);
   });
 
-  testWidgets('320px phone renders mural, calendar and both contact buttons',
+  testWidgets('320px phone renders full art without horizontal overflow',
       (tester) async {
-    SharedPreferences.setMockInitialValues({'visa_run_language': 'ru'});
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
     await render(tester, width: 320, height: 640);
-    expect(find.byKey(const Key('balloon-girl-art')), findsOneWidget);
+    expect(find.byKey(const Key('concrete-wall-image')), findsOneWidget);
     expect(find.byKey(const Key('contact-whatsapp')), findsOneWidget);
     expect(find.byKey(const Key('contact-telegram')), findsOneWidget);
-    expect(find.byType(BalloonGirlPainter), findsNothing);
     expect(find.byType(GraffitiBookingCalendar), findsOneWidget);
 
-    final wall = find.byKey(const Key('concrete-wall'));
-    final details = find.byKey(const Key('concrete-surface-detail'));
-    final startWallY = tester.getTopLeft(wall).dy;
-    final startDetailsY = tester.getTopLeft(details).dy;
+    final image = find.byKey(const Key('concrete-wall-image'));
+    final initialY = tester.getTopLeft(image).dy;
     await tester.drag(find.byType(SingleChildScrollView),
-        const Offset(0, -180));
+        const Offset(0, -240));
     await tester.pumpAndSettle();
-    expect(tester.getTopLeft(wall).dy, lessThan(startWallY));
-    expect(tester.getTopLeft(details).dy, lessThan(startDetailsY));
+    expect(tester.getTopLeft(image).dy, lessThan(initialY));
   });
 }

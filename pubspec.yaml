@@ -1,7 +1,7 @@
 name: visa_run_test
-description: Original concrete and stencil-style visa run Flutter web demo.
+description: Lightweight image-based visa run Flutter web demo.
 publish_to: none
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -18,5 +18,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  shaders:
-    - shaders/concrete.frag
+  assets:
+    - assets/images/banksy_wall.webp

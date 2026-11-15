@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'graffiti_widgets.dart';
+import 'transparent_stencil_button.dart';
 
 /// A locally interactive booking calendar, painted on the same wall.
 class GraffitiBookingCalendar extends StatefulWidget {
@@ -135,7 +136,7 @@ class _GraffitiBookingCalendarState extends State<GraffitiBookingCalendar> {
               ),
               const SizedBox(height: 4),
               Align(
-                child: GraffitiButton(
+                child: TransparentStencilButton(
                   key: const Key('calendar-book'),
                   label: _ru ? 'ЗАБРОНИРОВАТЬ' : 'BOOK VISA RUN',
                   compact: true,
@@ -180,10 +181,12 @@ class _GraffitiBookingCalendarState extends State<GraffitiBookingCalendar> {
             width: 29, height: 27,
             alignment: Alignment.center,
             decoration: selected
-                ? const BoxDecoration(color: graffitiInk)
+                ? BoxDecoration(
+                    border: Border.all(color: graffitiInk, width: 1.7),
+                  )
                 : null,
             child: Text('$day', style: TextStyle(
-              color: selected ? graffitiChalk : graffitiInk.withValues(
+              color: graffitiInk.withValues(
                 alpha: available ? .96 : .24,
               ),
               fontSize: 12,
@@ -203,9 +206,9 @@ class _CalendarSprayFrame extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final border = Paint()
-      ..color = graffitiInk.withValues(alpha: .83)
+      ..color = graffitiInk.withValues(alpha: .70)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.3;
+      ..strokeWidth = 1.7;
     final path = Path()
       ..moveTo(3, 2)
       ..lineTo(size.width * .4, 2.6)

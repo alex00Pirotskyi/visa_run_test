@@ -1,28 +1,23 @@
-# VISA RUN — Balloon Mural Demo
+# VISA RUN — image-first graffiti wall
 
-Flutter Web, minimalist concrete-and-graffiti single-screen concept. The background is a **static procedural concrete shader** and a lightweight, faithful **vector reconstruction of the user-provided girl-and-balloon reference** (a few hundred contour points, with no PNG/JPEG downloads).
+Lightweight, minimal Flutter Web demo for a visa-run company. Built for the user's reference image: a black stencil girl and one red heart balloon on pale concrete. The background is shipped as a **small local WebP asset**, not an approximation drawn from an animated shader.
 
-## Design
+## Visual architecture
 
-- Pale grainy concrete wall with tiny marks, no floor, shadow shafts or distracting seams
-- Black stencil silhouette of a girl reaching towards a single **red heart balloon**
-- Angled **VISA RUN** calendar near the upper-left corner, with selectable future days (current month and up to 12 months ahead)
-- One `BOOK VISA RUN` graffiti-style button; pressing it shows a demo-only notice because booking is not configured
-- Two separate black graffiti buttons: **WhatsApp** and **Telegram**. They display an honest not-configured notice until official contact links are supplied
-- Tiny EN / RU language switch in the corner; on a first visit only the language picker appears
-- Works on desktop and narrow phones: desktop mural occupies the background, mobile layout places the calendar above the artwork and contacts to the girl's left
-- No large image assets, external fonts, looping animations, parallax, tracking, or backend
+- `assets/images/banksy_wall.webp`: compressed 840px-wide copy of the user's uploaded image (about 10 KB); packaged locally with Flutter
+- `lib/main.dart`: clean, single image-overlay composition on desktop; mobile preserves the picture's proportions and shows a complete girl + heart composition beneath the calendar
+- `lib/graffiti_calendar.dart`: a real selectable date grid, slightly rotated, with no filled card or opaque panel
+- `lib/transparent_stencil_button.dart`: reusable outline-only stencil graffiti actions for booking, WhatsApp and Telegram
+- `lib/graffiti_widgets.dart`: reusable weathered stencil lettering
+- Small `EN / RU` language switch with saved choice via `shared_preferences`, first visit shows only English/Russian selector
 
-## Structure
+No GPU wall shader, parallax, JS library, external CDN, looping animation, or full-screen blur is used. Both the picture and the controls scroll as one wall.
 
-- `lib/main.dart`: minimalist responsive scene, locale persistence with `shared_preferences`, demo notices
-- `lib/balloon_mural.dart`: cached vector contour paths for the reference artwork, painting black and red
-- `lib/graffiti_calendar.dart`: a real locally interactive monthly date picker in a roughly painted frame
-- `lib/graffiti_widgets.dart`: existing reusable custom graffiti-style buttons and text components
-- `shaders/concrete.frag`: fast static mineral-grain shader
-- `lib/concrete_wall.dart`: subtle wall speckles and staining
+## Demo behavior
 
-## Local development
+The calendar can select dates, but no live availability or booking backend exists. Booking and contact taps show clear demo notices rather than opening nonexistent services. No form data is transmitted. Set your friend's official WhatsApp and Telegram links and booking endpoint before production use.
+
+## Develop
 
 Flutter 3.47.2+:
 
@@ -34,19 +29,12 @@ flutter build web --release
 flutter run -d chrome
 ```
 
-## Demo limitations and rights
+## Deploy
 
-**Booking and contact details are not connected.** No requests, dates, or personal information are transmitted. The calendar only stores the selected date in widget state.
+Dedicated Cloudflare Worker `visa-run-test`, custom domain `visa-run-test.evils.space`. The existing Evil Space Worker is unaffected.
 
-The girl's silhouette is an adaptation of artwork in a user-provided image. Check appropriate permissions before using that artwork in a public commercial site; a commissioned original is preferable for production.
+Set GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` on the new repository, then rerun `Deploy demo to Cloudflare`. A successful Flutter build alone does not mean the website is live.
 
-## Deployment
+## Rights
 
-GitHub repository: `alex00Pirotskyi/visa_run_test`.
-Dedicated Cloudflare Worker: `visa-run-test`, separate from the production Evil Space Worker.
-Intended domain: `https://visa-run-test.evils.space`.
-
-To deploy from GitHub Actions, configure `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID` as Actions secrets in **this** repository and run
-`Deploy demo to Cloudflare`. A successful Flutter build does not by itself
-mean the domain is live.
+The image is from the user's uploaded reference, depicting a recognizable work by Banksy. Keep the demo private for review until rights for public/commercial use are clarified, or commission a distinct original mural.
