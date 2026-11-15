@@ -1,7 +1,7 @@
 name: visa_run_test
-description: Lightweight image-based visa run Flutter web demo.
+description: Lightweight Flutter Web visa-run calendar with vector mural and concrete shader.
 publish_to: none
-version: 0.2.0+2
+version: 0.4.0+4
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -18,5 +18,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/banksy_wall.webp
+  shaders:
+    - shaders/concrete.frag

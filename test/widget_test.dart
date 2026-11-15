@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:visa_run_test/bus_mural.dart';
 import 'package:visa_run_test/glass_calendar.dart';
+import 'package:visa_run_test/liquid_glass.dart';
 import 'package:visa_run_test/main.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  Future<void> render(
+  Future<void> openApp(
     WidgetTester tester, {
     double width = 1440,
     double height = 900,
@@ -21,109 +23,139 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('reference mural is packaged locally', (tester) async {
-    await render(tester);
-    final data = await rootBundle.load('assets/images/banksy_wall.webp');
-    expect(data.lengthInBytes, greaterThan(30000));
-    expect(data.lengthInBytes, lessThan(250000));
-    expect(find.byKey(const Key('concrete-wall-image')), findsOneWidget);
-  });
-
-  testWidgets('first visit only shows English/Russian language choices', (tester) async {
-    await render(tester);
+  testWidgets('first visitor sees only language choice on concrete',
+      (tester) async {
+    await openApp(tester);
     expect(find.text('ENGLISH'), findsOneWidget);
     expect(find.text('РУССКИЙ'), findsOneWidget);
-    expect(find.byKey(const Key('open-booking')), findsNothing);
+    expect(find.byKey(const Key('concrete-wall')), findsOneWidget);
     expect(find.byType(GlassBookingCalendar), findsNothing);
+    expect(find.byKey(const Key('contact-whatsapp')), findsNothing);
+    expect(find.byKey(const Key('open-booking')), findsNothing);
   });
 
-  testWidgets('English reveals glass capsules but no calendar yet', (tester) async {
-    await render(tester);
+  testWidgets('English directly reveals the open glass calendar and vector bus',
+      (tester) async {
+    await openApp(tester);
     await tester.tap(find.byKey(const Key('choose-en')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('open-booking')), findsOneWidget);
+
+    expect(find.byType(GlassBookingCalendar), findsOneWidget);
+    expect(find.byKey(const Key('booking-calendar')), findsOneWidget);
+    expect(find.byKey(const Key('vector-bus-mural')), findsOneWidget);
     expect(find.byKey(const Key('contact-whatsapp')), findsOneWidget);
     expect(find.byKey(const Key('contact-telegram')), findsOneWidget);
-    expect(find.byType(GlassBookingCalendar), findsNothing);
+    expect(find.byKey(const Key('open-booking')), findsNothing);
+    expect(find.byType(LiquidGlass), findsWidgets);
+
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('visa_run_language'), 'en');
   });
 
-  testWidgets('booking capsule opens and close icon dismisses calendar', (tester) async {
+  testWidgets('the calendar is already usable without an open-booking tap',
+      (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
-    await render(tester);
-    await tester.tap(find.byKey(const Key('open-booking')));
-    await tester.pumpAndSettle();
+    await openApp(tester);
     expect(find.byType(GlassBookingCalendar), findsOneWidget);
-    expect(find.text('PICK A DATE'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('calendar-close')));
-    await tester.pumpAndSettle();
-    expect(find.byType(GlassBookingCalendar), findsNothing);
-  });
-
-  testWidgets('calendar date selection shows demo feedback and closes', (tester) async {
-    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
-    await render(tester);
-    await tester.tap(find.byKey(const Key('open-booking')));
-    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('calendar-next-month')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('calendar-day-15')));
     await tester.pumpAndSettle();
+
+    expect(find.textContaining('15,'), findsOneWidget);
     await tester.tap(find.byKey(const Key('calendar-book')));
     await tester.pump();
-    expect(find.textContaining('booking is not connected'), findsOneWidget);
-    expect(find.byType(GlassBookingCalendar), findsNothing);
+    expect(find.textContaining('booking is not connected yet'),
+        findsOneWidget);
+    expect(find.byType(GlassBookingCalendar), findsOneWidget);
   });
 
-  testWidgets('language can change and persist across app recreation', (tester) async {
-    await render(tester);
+  testWidgets('Continue without a date asks user to select one',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
+    await openApp(tester);
+    await tester.tap(find.byKey(const Key('calendar-book')));
+    await tester.pump();
+    expect(find.textContaining('choose your travel date'), findsOneWidget);
+  });
+
+  testWidgets('Russian preference restores and switching works',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'ru'});
+    await openApp(tester);
+    expect(find.text('ENGLISH'), findsNothing);
+    expect(find.byType(GlassBookingCalendar), findsOneWidget);
+    await tester.tap(find.byKey(const Key('switch-en')));
+    await tester.pumpAndSettle();
+    expect(find.text('Continue'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('visa_run_language'), 'en');
+  });
+
+  testWidgets('selected language persists after app recreation',
+      (tester) async {
+    await openApp(tester);
     await tester.tap(find.byKey(const Key('choose-ru')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('open-booking')));
-    await tester.pumpAndSettle();
-    expect(find.text('ВЫБЕРИ ДАТУ'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(const VisaRunApp());
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('open-booking')), findsOneWidget);
+
+    expect(find.byType(GlassBookingCalendar), findsOneWidget);
+    expect(find.text('ДАЛЕЕ'), findsOneWidget);
     expect(find.text('ENGLISH'), findsNothing);
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('visa_run_language'), 'ru');
   });
 
-  testWidgets('WhatsApp and Telegram remain honest demo controls', (tester) async {
+  testWidgets('WhatsApp and Telegram remain explicitly demo-only',
+      (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
-    await render(tester);
+    await openApp(tester);
     await tester.tap(find.byKey(const Key('contact-telegram')));
     await tester.pump();
     expect(find.textContaining('not configured yet'), findsOneWidget);
   });
 
-  testWidgets('320px phone keeps mural and floating actions visible', (tester) async {
+  testWidgets('vector bus contains the traced line art and paints as vector',
+      (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
-    await render(tester, width: 320, height: 640);
-    expect(find.byKey(const Key('concrete-wall-image')), findsOneWidget);
-    expect(find.byKey(const Key('open-booking')), findsOneWidget);
-    expect(find.byKey(const Key('contact-whatsapp')), findsOneWidget);
-    expect(find.byKey(const Key('contact-telegram')), findsOneWidget);
-    expect(find.byType(GlassBookingCalendar), findsNothing);
-    await tester.tap(find.byKey(const Key('open-booking')));
-    await tester.pumpAndSettle();
-    expect(find.byType(GlassBookingCalendar), findsOneWidget);
-    await tester.tap(find.byKey(const Key('calendar-close')));
-    await tester.pumpAndSettle();
-    expect(find.byType(GlassBookingCalendar), findsNothing);
+    await openApp(tester);
+    expect(find.byWidgetPredicate((w) =>
+        w is CustomPaint && w.painter is BusMuralPainter), findsOneWidget);
   });
 
-  testWidgets('mural scrolls with controls on small phones', (tester) async {
+  testWidgets('320px phone has visible calendar, contacts and bus without overflow',
+      (tester) async {
     SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
-    await render(tester, width: 320, height: 600);
-    final mural = find.byKey(const Key('concrete-wall-image'));
-    final before = tester.getTopLeft(mural).dy;
+    await openApp(tester, width: 320, height: 640);
+    expect(find.byType(GlassBookingCalendar), findsOneWidget);
+    expect(find.byKey(const Key('contact-whatsapp')), findsOneWidget);
+    expect(find.byKey(const Key('contact-telegram')), findsOneWidget);
+    expect(find.byKey(const Key('vector-bus-mural')), findsOneWidget);
+    expect(find.byKey(const Key('open-booking')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tablet layout flows without content overlap',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'ru'});
+    await openApp(tester, width: 820, height: 650);
+    expect(find.byType(GlassBookingCalendar), findsOneWidget);
+    expect(find.byKey(const Key('vector-bus-mural')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile concrete, calendar and bus share scroll coordinates',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
+    await openApp(tester, width: 320, height: 600);
+    final bus = find.byKey(const Key('vector-bus-mural'));
+    final wall = find.byKey(const Key('concrete-wall'));
+    final busY = tester.getTopLeft(bus).dy;
+    final wallY = tester.getTopLeft(wall).dy;
     await tester.drag(find.byType(SingleChildScrollView),
-      const Offset(0, -100));
+      const Offset(0, -180));
     await tester.pumpAndSettle();
-    expect(tester.getTopLeft(mural).dy, lessThan(before));
+    expect(tester.getTopLeft(bus).dy, lessThan(busY));
+    expect(tester.getTopLeft(wall).dy, lessThan(wallY));
   });
 }

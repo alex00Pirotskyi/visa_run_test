@@ -1,146 +1,277 @@
 import 'package:flutter/material.dart';
 import 'liquid_glass.dart';
 
+/// Always visible: choose a date directly, then Continue within the card.
+/// No initial booking CTA, route picker or hidden modal.
 class GlassBookingCalendar extends StatefulWidget {
-  const GlassBookingCalendar({super.key, required this.language,
-      required this.onBook, required this.onClose, this.width = 348,
-      this.mobile = false});
+  const GlassBookingCalendar({
+    super.key,
+    required this.language,
+    required this.onBook,
+    required this.width,
+    this.mobile = false,
+  });
+
   final String language;
   final ValueChanged<DateTime?> onBook;
-  final VoidCallback onClose;
   final double width;
   final bool mobile;
-  @override State<GlassBookingCalendar> createState() => _GlassCalendarState();
+
+  @override
+  State<GlassBookingCalendar> createState() => _GlassBookingCalendarState();
 }
 
-class _GlassCalendarState extends State<GlassBookingCalendar> {
-  late DateTime month;
-  DateTime? selected;
-  bool get ru => widget.language == 'ru';
-  static const en = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE',
-    'JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
-  static const rus = ['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ',
-    'ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
+class _GlassBookingCalendarState extends State<GlassBookingCalendar> {
+  late DateTime shownMonth;
+  DateTime? chosen;
 
-  @override void initState() {
+  bool get ru => widget.language == 'ru';
+
+  static const _english = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  static const _russian = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+  ];
+
+  String monthName(DateTime d) =>
+      (ru ? _russian : _english)[d.month - 1];
+
+  @override
+  void initState() {
     super.initState();
     final now = DateTime.now();
-    month = DateTime(now.year, now.month);
+    shownMonth = DateTime(now.year, now.month);
   }
 
-  String labelFor(DateTime d) =>
-      '${(ru ? rus : en)[d.month - 1]} ${d.year}';
-
-  void move(int offset) {
-    final date = DateTime(month.year, month.month + offset);
+  void _move(int offset) {
+    final next = DateTime(shownMonth.year, shownMonth.month + offset);
     final now = DateTime.now();
-    if (date.isBefore(DateTime(now.year, now.month)) ||
-        date.isAfter(DateTime(now.year, now.month + 12))) {
-      return;
-    }
+    final minimum = DateTime(now.year, now.month);
+    final maximum = DateTime(now.year, now.month + 12);
+    if (next.isBefore(minimum) || next.isAfter(maximum)) return;
     setState(() {
-      month = date;
-      if (selected != null &&
-          (selected!.month != date.month || selected!.year != date.year)) {
-        selected = null;
+      shownMonth = next;
+      if (chosen != null &&
+          (chosen!.year != next.year || chosen!.month != next.month)) {
+        chosen = null;
       }
     });
   }
 
-  @override Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final offset = month.weekday - 1;
-    final last = DateTime(month.year, month.month + 1, 0).day;
-    final week = ru ? ['П','В','С','Ч','П','С','В'] : ['M','T','W','T','F','S','S'];
+  String _selectedLabel() {
+    if (chosen == null) return ru ? 'Выберите дату' : 'Select your date';
+    final d = chosen!;
+    return ru
+        ? '${d.day} ${monthName(d).toLowerCase()} ${d.year}'
+        : '${monthName(d)} ${d.day}, ${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now();
+    final midnight = DateTime(today.year, today.month, today.day);
+    final offset = shownMonth.weekday - 1;
+    final lastDay = DateTime(shownMonth.year, shownMonth.month + 1, 0).day;
+    final weekdays = ru
+        ? ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС']
+        : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
     return SizedBox(
       width: widget.width,
       child: LiquidGlass(
-        radius: 28, blur: widget.mobile ? 6 : 12, strong: true,
-        padding: const EdgeInsets.fromLTRB(18, 14, 18, 19),
+        radius: widget.mobile ? 26 : 39,
+        blur: widget.mobile ? 5 : 11,
+        strong: true,
+        padding: EdgeInsets.fromLTRB(
+          widget.mobile ? 15 : 29,
+          widget.mobile ? 16 : 28,
+          widget.mobile ? 15 : 29,
+          widget.mobile ? 18 : 27,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(children: [
-              Expanded(child: Text(ru ? 'ВЫБЕРИ ДАТУ' : 'PICK A DATE',
-                style: const TextStyle(fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2, color: Color(0xff202021),fontSize: 12))),
-              IconButton(key: const Key('calendar-close'), onPressed: widget.onClose,
-                tooltip: ru ? 'Закрыть' : 'Close calendar',
-                constraints: const BoxConstraints(minWidth: 40,minHeight: 40),
-                padding: EdgeInsets.zero,icon: const Icon(Icons.close,size: 21)),
-            ]),
-            const SizedBox(height: 3),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,children: [
-              IconButton(key: const Key('calendar-prev-month'),onPressed: () => move(-1),
-                icon: const Icon(Icons.chevron_left),padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40,minHeight: 40)),
-              Expanded(child: Center(child: FittedBox(
+              _monthArrow('calendar-prev-month', Icons.chevron_left, -1),
+              Expanded(child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(labelFor(month),
+                child: Text(
+                  '${monthName(shownMonth)} ${shownMonth.year}',
                   key: const Key('calendar-month-label'),
-                  maxLines: 1,
-                  style: const TextStyle(fontSize: 12,letterSpacing: .3,
-                    color: Color(0xff252525),fontWeight: FontWeight.w800)),
-              ))),
-              IconButton(key: const Key('calendar-next-month'),onPressed: () => move(1),
-                icon: const Icon(Icons.chevron_right),padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 40,minHeight: 40)),
+                  style: TextStyle(
+                    fontSize: widget.mobile ? 18 : 21,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -.7,
+                    color: const Color(0xff1b1c1d),
+                  ),
+                ),
+              )),
+              _monthArrow('calendar-next-month', Icons.chevron_right, 1),
             ]),
-            const SizedBox(height: 5),
+            SizedBox(height: widget.mobile ? 14 : 21),
             Row(children: [
-              for (final day in week)
-                Expanded(child: Center(child: Text(day,
-                  style: const TextStyle(color: Color(0xff606164),fontSize: 10,
-                    fontWeight: FontWeight.w800)))),
+              for (final day in weekdays)
+                Expanded(child: Center(
+                  child: Text(day, style: TextStyle(
+                    color: const Color(0xff565759),
+                    fontSize: widget.mobile ? 8 : 10,
+                    fontWeight: FontWeight.w700,
+                  )),
+                )),
             ]),
-            const SizedBox(height: 5),
+            SizedBox(height: widget.mobile ? 8 : 13),
             GridView.count(
-              crossAxisCount: 7,childAspectRatio: 1.05,
+              crossAxisCount: 7,
+              childAspectRatio: widget.mobile ? 1.07 : 1.11,
+              shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,padding: EdgeInsets.zero,
-              children: [for (var i = 0; i < 42; i++) cell(i - offset + 1,last,today)],
+              padding: EdgeInsets.zero,
+              children: [
+                for (var i = 0; i < 42; i++)
+                  _dayTile(i - offset + 1, lastDay, midnight),
+              ],
             ),
-            const SizedBox(height: 8),
-            SizedBox(height: 48,child: FilledButton(
-              key: const Key('calendar-book'),
-              onPressed: () => widget.onBook(selected),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xff252526),foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
-              child: Text(ru ? 'ПРОДОЛЖИТЬ' : 'CONTINUE',
-                style: const TextStyle(fontSize: 12,fontWeight: FontWeight.w900,
-                  letterSpacing: .8)),
-            )),
+            SizedBox(height: widget.mobile ? 8 : 17),
+            Divider(
+              height: 1,
+              color: const Color(0xff757575).withValues(alpha: .22),
+            ),
+            SizedBox(height: widget.mobile ? 12 : 16),
+            Row(children: [
+              Icon(Icons.calendar_month_outlined,
+                size: widget.mobile ? 16 : 20,
+                color: const Color(0xff242526)),
+              const SizedBox(width: 7),
+              Expanded(child: Text(
+                _selectedLabel(),
+                key: const Key('selected-date-label'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: widget.mobile ? 10 : 12,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xff222324),
+                ),
+              )),
+              const SizedBox(width: 8),
+              _continueButton(),
+            ]),
           ],
         ),
       ),
     );
   }
 
-  Widget cell(int day,int last,DateTime today) {
-    if (day < 1 || day > last) return const SizedBox.shrink();
-    final d = DateTime(month.year,month.month,day);
-    final available = !d.isBefore(today);
-    final chosen = selected != null && d.year == selected!.year &&
-        d.month == selected!.month && d.day == selected!.day;
+  Widget _monthArrow(String key, IconData icon, int direction) => Material(
+    color: const Color(0x35FFFFFF),
+    shape: const CircleBorder(side: BorderSide(color: Color(0x80FFFFFF))),
+    child: InkWell(
+      key: Key(key),
+      onTap: () => _move(direction),
+      customBorder: const CircleBorder(),
+      child: SizedBox(
+        width: widget.mobile ? 39 : 45,
+        height: widget.mobile ? 39 : 45,
+        child: Icon(icon, color: const Color(0xff252526), size: 22),
+      ),
+    ),
+  );
+
+  Widget _dayTile(int day, int maxDay, DateTime today) {
+    if (day < 1 || day > maxDay) return const SizedBox.shrink();
+
+    final date = DateTime(shownMonth.year, shownMonth.month, day);
+    final available = !date.isBefore(today);
+    final selected = chosen != null &&
+        chosen!.year == date.year &&
+        chosen!.month == date.month &&
+        chosen!.day == date.day;
+
     return Semantics(
-      label: '$day ${labelFor(d)}',selected: chosen,button: true,enabled: available,
+      label: '${date.day} ${monthName(date)} ${date.year}',
+      button: true,
+      enabled: available,
+      selected: selected,
       child: InkWell(
-        key: Key('calendar-day-$day'),onTap: available ? () =>
-            setState(() => selected = d) : null,
-        borderRadius: BorderRadius.circular(28),
-        child: Center(child: Container(
-          width: 32,height: 32,alignment: Alignment.center,
-          decoration: chosen ? const BoxDecoration(
-            color: Color(0xff252526),shape: BoxShape.circle) : null,
-          child: Text('$day',style: TextStyle(fontSize: 12,
-            fontWeight: chosen ? FontWeight.w900 : FontWeight.w700,
-            color: chosen ? Colors.white :
-                const Color(0xff202021).withValues(alpha: available ? .95 : .25))),
-        )),
+        key: Key('calendar-day-$day'),
+        onTap: available ? () => setState(() => chosen = date) : null,
+        customBorder: const CircleBorder(),
+        child: Center(
+          child: Container(
+            width: widget.mobile ? 32 : 38,
+            height: widget.mobile ? 31 : 37,
+            alignment: Alignment.center,
+            decoration: selected ? BoxDecoration(
+              color: const Color(0xA3FFFFFF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xEEFFFFFF), width: 1.2),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x26000000), blurRadius: 7,
+                  offset: Offset(0, 2)),
+                BoxShadow(
+                  color: Color(0x99FFFFFF), blurRadius: 4,
+                  offset: Offset(-2, -2)),
+              ],
+            ) : null,
+            child: Text('$day',
+              style: TextStyle(
+                fontSize: widget.mobile ? 11 : 13,
+                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                color: const Color(0xff242526).withValues(
+                  alpha: available ? 1 : .27,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
+
+  Widget _continueButton() => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      key: const Key('calendar-book'),
+      onTap: () => widget.onBook(chosen),
+      borderRadius: BorderRadius.circular(24),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xDEFFFFFF), Color(0x7EF1F1F0)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xF0FFFFFF), width: 1),
+          boxShadow: const [
+            BoxShadow(color: Color(0x1D000000),
+              blurRadius: 9, offset: Offset(0, 3)),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.mobile ? 10 : 15,
+            vertical: widget.mobile ? 10 : 13,
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(ru ? 'ДАЛЕЕ' : 'Continue',
+              style: TextStyle(
+                color: const Color(0xff242526),
+                fontSize: widget.mobile ? 10 : 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.arrow_forward, size: 16,
+              color: Color(0xff242526)),
+          ]),
+        ),
+      ),
+    ),
+  );
 }
