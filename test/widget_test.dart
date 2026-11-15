@@ -24,7 +24,7 @@ void main() {
   testWidgets('reference mural is packaged locally', (tester) async {
     await render(tester);
     final data = await rootBundle.load('assets/images/banksy_wall.webp');
-    expect(data.lengthInBytes, greaterThan(9000));
+    expect(data.lengthInBytes, greaterThan(30000));
     expect(data.lengthInBytes, lessThan(250000));
     expect(find.byKey(const Key('concrete-wall-image')), findsOneWidget);
   });

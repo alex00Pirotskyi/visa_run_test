@@ -17,7 +17,7 @@ The graffiti and concrete remain part of one completely static artwork. UI is li
 ## Performance
 
 - **No animated background**, no shader, no WebGL surface simulation, and no constantly repainted noise layer
-- **One locally bundled WebP mural asset** from a 1000×562 source image. The initial bundled image is heavily compressed; the design is compatible with replacing it in place with the higher-quality WebP export without code changes
+- **One locally bundled higher-quality WebP mural asset**, exported at the original 1000×562 source resolution (~40 KB), with substantially better preserved concrete and stencil details than the old ~10 KB asset; we do not invent detail beyond the uploaded reference
 - Only glass controls and the opened date picker use localized clipped `BackdropFilter`, never the full screen
 - Reduced-motion devices receive no backdrop blur and no scale animation
 - All parts of the page, including the mural, share the same scroll coordinates
