@@ -333,10 +333,12 @@ class _VisaLandingState extends State<VisaLanding> {
     final padding = width < 400 ? 12.0 : 22.0;
     final contentWidth = width - 2 * padding;
     final calendarWidth = math.min(contentWidth, 460.0);
-    final muralWidth = math.min(width * 1.56, 700.0);
+    // Scale the entire vector bus to available screen width, never larger
+    // than the padded viewport. Keep it centered behind the calendar.
+    final muralWidth = math.min(contentWidth, 680.0);
 
-    // Calendar sets this stack's height; the mural is painted behind it.
-    // Both remain in the same scroll coordinate system on narrow phones.
+    // Calendar sets this stack's height; the bus stays behind it but
+    // always fits within the mobile viewport, including 320px screens.
     return SizedBox(
       width: width,
       child: Padding(

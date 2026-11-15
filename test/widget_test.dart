@@ -157,7 +157,8 @@ void main() {
       of: find.byKey(const Key('booking-calendar')),
       matching: find.byType(LiquidGlass),
     ));
-    expect(glass.tintOpacity, closeTo(.75, .001));
+    expect(glass.strongTopAlpha, closeTo(.78, .001));
+    expect(glass.strongBottomAlpha, closeTo(.69, .001));
     expect(glass.blur, lessThan(6));
   });
 
@@ -168,7 +169,23 @@ void main() {
     final bus = tester.getRect(find.byKey(const Key('vector-bus-mural')));
     final calendar = tester.getRect(find.byKey(const Key('booking-calendar')));
     expect(bus.overlaps(calendar), isTrue);
+    expect(bus.left, greaterThanOrEqualTo(0));
+    expect(bus.right, lessThanOrEqualTo(320));
+    expect(bus.width, closeTo(296, .01));
     expect(find.byKey(const Key('open-booking')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('bus scales proportionally and fits a 375px phone',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'visa_run_language': 'en'});
+    await openApp(tester, width: 375, height: 667);
+    final bus = tester.getRect(find.byKey(const Key('vector-bus-mural')));
+    final calendar = tester.getRect(find.byKey(const Key('booking-calendar')));
+    expect(bus.left, greaterThanOrEqualTo(0));
+    expect(bus.right, lessThanOrEqualTo(375));
+    expect(bus.width, closeTo(351, .01));
+    expect(bus.overlaps(calendar), isTrue);
     expect(tester.takeException(), isNull);
   });
 

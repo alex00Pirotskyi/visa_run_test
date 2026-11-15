@@ -86,7 +86,8 @@ class _GlassBookingCalendarState extends State<GlassBookingCalendar> {
         // Let the black bus graffiti show through the panel.
         blur: widget.mobile ? 2.5 : 4.5,
         strong: true,
-        tintOpacity: .75,
+        strongTopAlpha: .78,
+        strongBottomAlpha: .69,
         padding: EdgeInsets.fromLTRB(
           widget.mobile ? 15 : 29,
           widget.mobile ? 16 : 28,

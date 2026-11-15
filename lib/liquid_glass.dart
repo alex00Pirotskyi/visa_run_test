@@ -12,6 +12,8 @@ class LiquidGlass extends StatelessWidget {
     this.blur = 8,
     this.strong = false,
     this.tintOpacity = 1,
+    this.strongTopAlpha,
+    this.strongBottomAlpha,
   });
 
   final Widget child;
@@ -23,6 +25,11 @@ class LiquidGlass extends StatelessWidget {
   /// Multiplier for the glass fill only. 0.75 shows approximately 25%
   /// more of the underlying mural without dimming interactive text.
   final double tintOpacity;
+
+  /// Override the calendar's strong-glass gradient while leaving other
+  /// glass controls unchanged. Both values are opacity in the 0–1 range.
+  final double? strongTopAlpha;
+  final double? strongBottomAlpha;
 
   @override
   Widget build(BuildContext context) {
@@ -60,10 +67,10 @@ class LiquidGlass extends StatelessWidget {
                     colors: strong
                         ? [
                             const Color(0xfffafaf9).withValues(
-                              alpha: .91 * tintOpacity,
+                              alpha: strongTopAlpha ?? (.91 * tintOpacity),
                             ),
                             const Color(0xfff3f3f1).withValues(
-                              alpha: .79 * tintOpacity,
+                              alpha: strongBottomAlpha ?? (.79 * tintOpacity),
                             ),
                           ]
                         : [
