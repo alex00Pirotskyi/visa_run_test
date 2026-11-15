@@ -1,8 +1,7 @@
 #include <flutter/runtime_effect.glsl>
 
-// One-time, low-contrast poured concrete. No animation, vignetting or
-// high-frequency moving detail. The shader is painted in scrolling wall space.
-uniform vec2 uSize;
+// Low-contrast poured concrete. No animation, uniforms, vignette or heavy
+// noise. Local coordinates tie it to the scrolling wall without extra work.
 out vec4 fragColor;
 
 float hash21(vec2 p) {

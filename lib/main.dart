@@ -55,7 +55,7 @@ class _VisaLandingState extends State<VisaLanding> {
       body: LayoutBuilder(builder: (context, constraints) {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
-        final compact = w < 760;
+        final compact = w < 960;
         // One scrolling wall: its pigment, grain and all content share the
         // exact same transform. Nothing is pinned to the viewport.
         return SingleChildScrollView(
@@ -123,7 +123,7 @@ class _VisaLandingState extends State<VisaLanding> {
       decoration: BoxDecoration(border: Border.all(color: ink, width: 1.6)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        child: const Text('CONCEPT / 001', style: TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 2)),
+        child: Text(compact ? 'DEMO' : 'CONCEPT / 001', style: const TextStyle(fontSize: 10, color: ink, fontWeight: FontWeight.w900, letterSpacing: 2)),
       ),
     )
   ]);
@@ -131,7 +131,7 @@ class _VisaLandingState extends State<VisaLanding> {
   Widget _nav(String text) => Text(text, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1.6, color: ink));
 
   Widget _desktopHero() => SizedBox(
-    height: 635,
+    height: 705,
     child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Expanded(flex: 52, child: _copy(false)),
       Expanded(flex: 48, child: Semantics(label: 'Original graffiti-style silhouette of a traveler carrying a suitcase beside a red spray-painted sun',
@@ -175,7 +175,11 @@ class _VisaLandingState extends State<VisaLanding> {
     const SizedBox(height: 22),
     const Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(Icons.circle, size: 8, color: spray), SizedBox(width: 8),
-      Text('DEMO SITE   /   NOTHING TO BOOK YET', style: TextStyle(color: ink, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1)),
+      Flexible(
+        child: Text('DEMO SITE   /   NOTHING TO BOOK YET',
+          softWrap: true,
+          style: TextStyle(color: ink, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: .6)),
+      ),
     ]),
   ]);
 
@@ -249,8 +253,6 @@ class ConcretePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xffb9b7ad));
     if (shader == null) return;
-    shader!.setFloat(0, size.width);
-    shader!.setFloat(1, size.height);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
   @override
