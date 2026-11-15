@@ -117,7 +117,7 @@ class _VisaLandingState extends State<VisaLanding> {
           final viewportHeight = constraints.maxHeight;
           final mobile = width < 780;
           final height = mobile
-              ? math.max(viewportHeight, 1190.0)
+              ? math.max(viewportHeight, 1090.0)
               : math.max(viewportHeight, 700.0);
 
           // The wall and every painted control belong to one scrollable
@@ -169,8 +169,8 @@ class _VisaLandingState extends State<VisaLanding> {
         Positioned(
           left: 0,
           right: 0,
-          top: 458,
-          height: 550,
+          top: 465,
+          height: 430,
           child: ClipRect(
             child: Image.asset(
               _backgroundAsset,
@@ -186,10 +186,10 @@ class _VisaLandingState extends State<VisaLanding> {
         // A small feathered edge merges the original concrete into a
         // matching pale area behind the calendar. No extra image needed.
         Positioned(
-          top: 458,
+          top: 465,
           left: 0,
           right: 0,
-          height: 80,
+          height: 70,
           child: IgnorePointer(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -329,7 +329,7 @@ class _VisaLandingState extends State<VisaLanding> {
         child: _calendar(calendarWidth),
       ),
       Positioned(
-        top: 1030,
+        top: 930,
         left: 20,
         child: _socialButtons(mobile: true),
       ),
